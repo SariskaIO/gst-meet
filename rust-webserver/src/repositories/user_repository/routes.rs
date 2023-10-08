@@ -371,40 +371,40 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN,  params.room_name, location);
+    } else if is_low_latency && multi_bitrate {
+        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+        location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
+        if codec == "H265" {
+            location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
+        }
+        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+        --xmpp-domain={}  --muc-domain={} \
+        --recv-video-scale-width=1280 \
+        --recv-video-scale-height=720 \
+        --room-name={} \
+        --recv-pipeline='audiomixer name=audio ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+           ! x264enc \
+           ! video/x-h264,profile=high \
+           ! flvmux streamable=true name=mux \
+           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     } else if is_low_latency {
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
         if codec == "H265" {
             location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
         }
-        location = format!("{}?vhost={}&param={}", location,"ll_latency".to_string(), encoded);
+
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
-           ! x264enc \
-           ! video/x-h264,profile=high \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
-    } else if is_low_latency && multi_bitrate {
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
-        if codec == "H265" {
-            location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
-        }        
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio  !  voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -418,7 +418,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio  ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -429,7 +429,7 @@ pub async fn start_recording(
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
+        --recv-pipeline='audiomixer name=audio ! voaacenc bitrate=96000 ! audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
            ! flvmux streamable=true  name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     } else if video_only { // video only streaming
@@ -453,7 +453,7 @@ pub async fn start_recording(
         --recv-video-scale-width=640 \
         --recv-video-scale-height=360 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
+        --recv-pipeline='audiomixer name=audio ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
@@ -513,7 +513,7 @@ fn create_response_start_video(app :String, stream: String, uuid: String) -> Res
         dash_url: format!("https://{}/play/dash/{}/{}.mpd", HLS_HOST, app, stream),
         hls_master_url: format!("https://{}/{}/{}/master.m3u8", HLS_HOST,app, stream),
         low_latency_hls_url: format!("https://{}/{}/{}/playlist.m3u8", LOW_LATENCY_HLS_HOST,app, stream),
-        low_latency_hls_master_url:format!("https://{}/{}/{}/playlist.m3u8", LOW_LATENCY_HLS_HOST,app, stream),
+        low_latency_hls_master_url:format!("https://{}/{}/{}/master.m3u8", LOW_LATENCY_HLS_HOST,app, stream),
         vod_url: format!("https://{}/{}/index.m3u8", VOD_HOST, uuid),
         rtmp_url: format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream),
         flv_url: format!("http://{}:8080/{}/{}.flv",EDGE_TCP_PLAY, app, stream),
