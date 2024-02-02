@@ -1015,6 +1015,9 @@ impl StanzaFilter for JitsiConference {
                        println!("Response status code: {}", response.status());
                        println!("Response body:\n{}", response.text().await?);           
                     }
+
+                    self.pipeline().set_state(gstreamer::State::Null);
+                    self.pipeline().set_state(gstreamer::State::Playing);
                     
                    debug!("participant left: {:?}", jid);
                        if let Some(f) = &self

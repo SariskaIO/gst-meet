@@ -5,7 +5,7 @@ use futures::stream::StreamExt;
 use glib::{Cast, ObjectExt, ToValue};
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GObjectExtManualGst, GstBinExt, GstObjectExt, PadExt},
-  Bin, Element, GhostPad,
+  Bin, Element, GhostPad
 };
 #[cfg(feature = "log-rtp")]
 use gstreamer_rtp::RTPBuffer;
@@ -1247,6 +1247,30 @@ impl JingleSession {
     dtlssrtpenc.link_pads(Some("src"), &nicesink, Some("sink"))?;
 
     let bus = pipeline.bus().context("failed to get pipeline bus")?;
+    bus.add_signal_watch();
+    bus.connect_message(None, move |_, msg| {
+        on_bus_message(&bus, msg);
+        || gstreamer::BusSyncReply::Pass
+    });
+fn on_bus_message(bus: &gstreamer::Bus, message: &gstreamer::Message) {
+    // Your implementation here
+
+      match message.view() {
+          gstreamer::MessageView::Eos(_) => {
+
+          }
+          gstreamer::MessageView::Error(err) => {
+              // Handle Error
+              eprintln!(
+                  "Error received from {}: {}",
+                  message.src().map(|s| s.path_string()).unwrap_or_else(|| "unknown".to_string()),
+                  err.error(),
+              );
+          }
+          // Handle other message types as needed
+          _ => {}
+      }
+    }
 
     let (pipeline_state_null_tx, pipeline_state_null_rx) = oneshot::channel();
     
