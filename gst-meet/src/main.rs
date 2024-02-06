@@ -485,6 +485,7 @@ async fn main_inner() -> Result<()> {
     .on_participant_left(move |_conference, participant| {
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
+        info!("Testing to see if the prod thing is working");
         Ok(())
       })
     })
