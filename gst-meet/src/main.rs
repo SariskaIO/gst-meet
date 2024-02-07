@@ -451,7 +451,7 @@ async fn main_inner() -> Result<()> {
             )
             .replace("{participant_id}", &participant.muc_jid.resource)
             .replace("{nick}", &participant.nick.unwrap_or_default());
-
+            info!("We are here, let's see if we reach");
           let bin = gstreamer::parse_bin_from_description(&pipeline_description, false)
             .context("failed to parse recv pipeline participant template")?;
 
