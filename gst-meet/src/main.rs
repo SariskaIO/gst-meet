@@ -451,7 +451,6 @@ async fn main_inner() -> Result<()> {
             )
             .replace("{participant_id}", &participant.muc_jid.resource)
             .replace("{nick}", &participant.nick.unwrap_or_default());
-            info!("We are here, let's see if we reach");
           let bin = gstreamer::parse_bin_from_description(&pipeline_description, false)
             .context("failed to parse recv pipeline participant template")?;
 
@@ -485,6 +484,11 @@ async fn main_inner() -> Result<()> {
     .on_participant_left(move |_conference, participant| {
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
+
+        if let Some(element) = recv_pipeline.by_name(&format!("participant_{}", participant.muc_jid.resource)) {
+          recv_pipeline.remove(&element).expect("Failed to remove participant element");
+          // Possibly adjust other elements, like mixers or compositors, here
+        }
         Ok(())
       })
     })
