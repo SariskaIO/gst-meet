@@ -483,8 +483,8 @@ async fn main_inner() -> Result<()> {
         info!("Participant left: {:?}", participant);
         if let Some(bin) = recv_pipeline {
           if let Some(element) = bin.by_name("video") {
-            println!("Element name: {}", element_name);
-        }
+            println!("Element name: {}", element);
+          }
         }
         Ok(())
       })
