@@ -478,10 +478,11 @@ async fn main_inner() -> Result<()> {
     .await;
 
   conference
-    .on_participant_left(move |_conference, participant, recv_pipeline| {
+    .on_participant_left(move |_conference, participant | {
+      let recv_pipeline_clone = recv_pipeline.clone();
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
-        if let Some(bin) = recv_pipeline {
+        if let Some(bin) = recv_pipeline_clone {
           if let Some(element) = bin.by_name("video") {
             println!("Element name");
           }
