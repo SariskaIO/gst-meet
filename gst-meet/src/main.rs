@@ -482,17 +482,9 @@ async fn main_inner() -> Result<()> {
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
         if let Some(bin) = recv_pipeline {
-          let elements = bin.children();
-          // Find the compositor element by name
-          let mut compositor_element: Option<gstreamer::Element> = None;
-          for element in elements {
-            if let Some(name) = element.name() {
-              if name == "video" {
-                compositor_element = Some(element);
-                break;
-              }
-            }
-          }
+          if let Some(element) = bin.by_name("video") {
+            println!("Element name: {}", element_name);
+        }
         }
         Ok(())
       })
