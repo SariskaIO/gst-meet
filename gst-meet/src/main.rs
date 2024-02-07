@@ -491,38 +491,38 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-  fn adjust_compositor_layout(compositor: &gst::Element, active_participants: usize) {
-    let mut xpos = 0;
-    let mut ypos = 0;
-    let layout_width = 1280; // Total width of the compositor output
-    let layout_height = 720; // Total height of the compositor output
+  // fn adjust_compositor_layout(compositor: E, active_participants: usize) {
+  //   let mut xpos = 0;
+  //   let mut ypos = 0;
+  //   let layout_width = 1280; // Total width of the compositor output
+  //   let layout_height = 720; // Total height of the compositor output
 
-    // Determine the size of each video based on the number of active participants
-    let video_width = layout_width / active_participants.max(1); // Prevent division by zero
-    let video_height = layout_height; // For simplicity, using full height for each stream
+  //   // Determine the size of each video based on the number of active participants
+  //   let video_width = layout_width / active_participants.max(1); // Prevent division by zero
+  //   let video_height = layout_height; // For simplicity, using full height for each stream
 
-    // Iterate over each sink pad to adjust the layout
-    for i in 0..active_participants {
-      if let Some(sink_pad) = compositor.static_pad(&format!("sink_{}", i)) {
-        // Calculate position for the current stream
-        xpos = i * video_width;
+  //   // Iterate over each sink pad to adjust the layout
+  //   for i in 0..active_participants {
+  //     if let Some(sink_pad) = compositor.static_pad(&format!("sink_{}", i)) {
+  //       // Calculate position for the current stream
+  //       xpos = i * video_width;
 
-        // Set properties on the sink pad to adjust the stream's position and size
-        sink_pad
-          .set_property("xpos", &xpos)
-          .expect("Failed to set xpos");
-        sink_pad
-          .set_property("ypos", &ypos)
-          .expect("Failed to set ypos");
-        sink_pad
-          .set_property("width", &video_width)
-          .expect("Failed to set width");
-        sink_pad
-          .set_property("height", &video_height)
-          .expect("Failed to set height");
-      }
-    }
-  }
+  //       // Set properties on the sink pad to adjust the stream's position and size
+  //       sink_pad
+  //         .set_property("xpos", &xpos)
+  //         .expect("Failed to set xpos");
+  //       sink_pad
+  //         .set_property("ypos", &ypos)
+  //         .expect("Failed to set ypos");
+  //       sink_pad
+  //         .set_property("width", &video_width)
+  //         .expect("Failed to set width");
+  //       sink_pad
+  //         .set_property("height", &video_height)
+  //         .expect("Failed to set height");
+  //     }
+  //   }
+  // }
 
   conference
     .on_colibri_message(move |_conference, message| {
