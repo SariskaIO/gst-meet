@@ -1,11 +1,12 @@
-use std::{collections::HashMap, time::Duration};
 use std::env;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{bail, Context, Result};
 #[cfg(target_os = "macos")]
 use cocoa::appkit::NSApplication;
 use colibri::{ColibriMessage, Constraints, VideoType};
 use glib::ObjectExt;
+use gstreamer::prelude::GstBinExtManual;
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GstBinExt},
   GhostPad,
@@ -48,19 +49,13 @@ struct Opt {
   )]
   focus_jid: Option<String>,
 
-  #[structopt(
-    long,
-    help = "If not specified, anonymous auth is used."
-  )]
+  #[structopt(long, help = "If not specified, anonymous auth is used.")]
   xmpp_username: Option<String>,
 
   #[structopt(long)]
   xmpp_password: Option<String>,
 
-  #[structopt(
-    long,
-    help = "The JWT token for Jitsi JWT authentication"
-  )]
+  #[structopt(long, help = "The JWT token for Jitsi JWT authentication")]
   xmpp_jwt: Option<String>,
 
   #[structopt(
@@ -241,14 +236,17 @@ async fn main_inner() -> Result<()> {
       if !qs.contains_key("room") {
         qs.insert("room".to_owned(), opt.room_name.clone());
       }
-      Ok::<_, anyhow::Error>(format!(
-        "{}?{}",
-        path_and_query.path(),
-        serde_urlencoded::to_string(&qs)?,
-      ).parse()?)
+      Ok::<_, anyhow::Error>(
+        format!(
+          "{}?{}",
+          path_and_query.path(),
+          serde_urlencoded::to_string(&qs)?,
+        )
+        .parse()?,
+      )
     })
     .transpose()?;
-  
+
   web_socket_url = Uri::from_parts(web_socket_url_parts)?;
 
   let xmpp_domain = opt
@@ -263,11 +261,13 @@ async fn main_inner() -> Result<()> {
     match opt.xmpp_username {
       Some(username) => Authentication::Plain {
         username,
-        password: opt.xmpp_password.context("if xmpp-username is provided, xmpp-password must also be provided")?,
+        password: opt
+          .xmpp_password
+          .context("if xmpp-username is provided, xmpp-password must also be provided")?,
       },
       None => match opt.xmpp_jwt {
-          Some(token) => Authentication::Jwt { token },
-          None => Authentication::Anonymous,
+        Some(token) => Authentication::Jwt { token },
+        None => Authentication::Anonymous,
       },
     },
     &opt.room_name,
@@ -377,8 +377,7 @@ async fn main_inner() -> Result<()> {
       info!("Found audio element in pipeline, linking...");
       let audio_sink = conference.audio_sink_element().await?;
       audio.link(&audio_sink)?;
-    }
-    else {
+    } else {
       conference.set_muted(MediaType::Audio, true).await?;
     }
 
@@ -386,12 +385,10 @@ async fn main_inner() -> Result<()> {
       info!("Found video element in pipeline, linking...");
       let video_sink = conference.video_sink_element().await?;
       video.link(&video_sink)?;
-    }
-    else {
+    } else {
       conference.set_muted(MediaType::Video, true).await?;
     }
-  }
-  else {
+  } else {
     conference.set_muted(MediaType::Audio, true).await?;
     conference.set_muted(MediaType::Video, true).await?;
   }
@@ -423,14 +420,14 @@ async fn main_inner() -> Result<()> {
       let recv_pipeline_participant_template = recv_pipeline_participant_template.clone();
       Box::pin(async move {
         info!("New participant: {:?}", participant);
-       if env::var("PROFILE").unwrap_or("none".to_string()) == "HD" {
+        if env::var("PROFILE").unwrap_or("none".to_string()) == "HD" {
           conference
-          .send_colibri_message(ColibriMessage::SelectedEndpointsChangedEvent {
-            selected_endpoints: [participant.muc_jid.resource.clone()].to_vec()
-          })
-          .await?;
+            .send_colibri_message(ColibriMessage::SelectedEndpointsChangedEvent {
+              selected_endpoints: [participant.muc_jid.resource.clone()].to_vec(),
+            })
+            .await?;
         }
-        
+
         if let Some(template) = recv_pipeline_participant_template {
           let pipeline_description = template
             .replace(
@@ -484,15 +481,56 @@ async fn main_inner() -> Result<()> {
     .on_participant_left(move |_conference, participant| {
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
-
-        if let Some(element) = recv_pipeline.by_name(&format!("participant_{}", participant.muc_jid.resource)) {
-          recv_pipeline.remove(&element).expect("Failed to remove participant element");
-          // Possibly adjust other elements, like mixers or compositors, here
+        if let Some(bin) = recv_pipeline {
+          let elements = bin.children();
+          // Find the compositor element by name
+          let mut compositor_element: Option<gstreamer::Element> = None;
+          for element in elements {
+            if let Some(name) = element.name() {
+              if name == "video" {
+                compositor_element = Some(element);
+                break;
+              }
+            }
+          }
         }
         Ok(())
       })
     })
     .await;
+
+  fn adjust_compositor_layout(compositor: &gst::Element, active_participants: usize) {
+    let mut xpos = 0;
+    let mut ypos = 0;
+    let layout_width = 1280; // Total width of the compositor output
+    let layout_height = 720; // Total height of the compositor output
+
+    // Determine the size of each video based on the number of active participants
+    let video_width = layout_width / active_participants.max(1); // Prevent division by zero
+    let video_height = layout_height; // For simplicity, using full height for each stream
+
+    // Iterate over each sink pad to adjust the layout
+    for i in 0..active_participants {
+      if let Some(sink_pad) = compositor.static_pad(&format!("sink_{}", i)) {
+        // Calculate position for the current stream
+        xpos = i * video_width;
+
+        // Set properties on the sink pad to adjust the stream's position and size
+        sink_pad
+          .set_property("xpos", &xpos)
+          .expect("Failed to set xpos");
+        sink_pad
+          .set_property("ypos", &ypos)
+          .expect("Failed to set ypos");
+        sink_pad
+          .set_property("width", &video_width)
+          .expect("Failed to set width");
+        sink_pad
+          .set_property("height", &video_height)
+          .expect("Failed to set height");
+      }
+    }
+  }
 
   conference
     .on_colibri_message(move |_conference, message| {
