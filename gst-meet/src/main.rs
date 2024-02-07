@@ -478,13 +478,10 @@ async fn main_inner() -> Result<()> {
     .await;
 
   conference
-    .on_participant_left(move |_conference, participant| {
-      let recv_pipeline = recv_pipeline.clone(); // Clone the Arc for shared ownership
-
+    .on_participant_left(move |_conference, participant, recv_pipeline| {
       Box::pin(async move {
         info!("Participant left: {:?}", participant);
-        let recv_pipeline = recv_pipeline.lock().unwrap(); 
-        if let Some(bin) = *recv_pipeline {
+        if let Some(bin) = recv_pipeline {
           if let Some(element) = bin.by_name("video") {
             println!("Element name");
           }
