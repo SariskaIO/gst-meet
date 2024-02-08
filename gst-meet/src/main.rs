@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::env;
 use std::{collections::HashMap, time::Duration};
 
@@ -487,18 +486,23 @@ async fn main_inner() -> Result<()> {
         Box::pin(async move {
             // Attempt to retrieve the remote participant's video sink element when they leave
             if let Some(video_sink_element) = conference_clone.remote_participant_video_sink_element().await {
-                // If a video sink element is found, you can perform operations on it here
+                // Perform operations on video_sink_element here
+                // For example, logging, setting state, etc.
                 println!("Participant left: {:?}, video sink element: {:?}", participant, video_sink_element);
 
-                // Example operation: setting the element to the NULL state, removing it, etc.
-                // This is just a placeholder for whatever operation you need to perform.
-                // video_sink_element.set_state(gstreamer::State::Null).expect("Failed to set state");
+                // Assuming there's a potential operation that returns Result<(), Error>
+                // video_sink_element.set_state(gstreamer::State::Null)?;
+
+                // Return Ok(()) if everything succeeds
+                Ok(())
             } else {
-                // If no video sink element is found, handle accordingly
+                // Handle the case where no video sink element is found
                 println!("No video sink element found for participant: {:?}", participant);
+                // Still return Ok(()) since it's not an error condition
+                Ok(())
             }
 
-            // Other cleanup or post-participant-left operations can be performed here.
+            // If there are other error conditions, make sure to return Err(e) where e is an Error type
         })
     })
     .await;
