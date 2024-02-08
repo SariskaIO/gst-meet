@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::env;
 use std::{collections::HashMap, time::Duration};
 
@@ -216,6 +217,7 @@ async fn main_inner() -> Result<()> {
     .transpose()
     .context("failed to parse send pipeline")?;
 
+    // Basically parses the cli command into a gstreamer bin
   let recv_pipeline = opt
     .recv_pipeline
     .as_ref()
@@ -255,6 +257,8 @@ async fn main_inner() -> Result<()> {
     .or_else(|| web_socket_url.host())
     .context("invalid WebSocket URL")?;
 
+  
+  // Start a new connection
   let (connection, background) = Connection::new(
     &web_socket_url.to_string(),
     xmpp_domain,
@@ -479,22 +483,22 @@ async fn main_inner() -> Result<()> {
 
     conference
     .on_participant_left(move |_conference, participant| {
-        let recv_pipeline = recv_pipeline_clone.clone(); // Clone again if needed for the async block
+        let conference_clone = conference.clone();
         Box::pin(async move {
-            // Use recv_pipeline here
-            if let Some(pipeline) = recv_pipeline {
-                // Here you can perform operations with the pipeline,
-                // e.g., removing elements related to the participant that left.
-                // This is just a placeholder example to demonstrate usage.
-                info!("Participant left: {:?}", participant);
-                // Example operation: find a specific element by name and do something
-                if let Some(element) = pipeline.by_name(&format!("participant_{}", participant.muc_jid.resource)) {
-                    // Perform operations with the element, such as unlinking it or setting it to NULL state
-                    info!("Found element for the participant that left: {:?}", element.name());
-                    // Note: Actual operation here will depend on what you need to do with the element
-                }
+            // Attempt to retrieve the remote participant's video sink element when they leave
+            if let Some(video_sink_element) = conference_clone.remote_participant_video_sink_element().await {
+                // If a video sink element is found, you can perform operations on it here
+                println!("Participant left: {:?}, video sink element: {:?}", participant, video_sink_element);
+
+                // Example operation: setting the element to the NULL state, removing it, etc.
+                // This is just a placeholder for whatever operation you need to perform.
+                // video_sink_element.set_state(gstreamer::State::Null).expect("Failed to set state");
+            } else {
+                // If no video sink element is found, handle accordingly
+                println!("No video sink element found for participant: {:?}", participant);
             }
-            Ok(())
+
+            // Other cleanup or post-participant-left operations can be performed here.
         })
     })
     .await;
