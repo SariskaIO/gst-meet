@@ -480,15 +480,17 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
+    
+
     conference
     .on_participant_left(move |_conference, participant| {
-        let conference_clone = conference.clone();
         Box::pin(async move {
+            info!("We here: {:?}", participant);
             // Attempt to retrieve the remote participant's video sink element when they leave
-            if let Some(video_sink_element) = conference_clone.remote_participant_video_sink_element().await {
+            if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await {
                 // Perform operations on video_sink_element here
                 // For example, logging, setting state, etc.
-                println!("Participant left: {:?}, video sink element: {:?}", participant, video_sink_element);
+                info!("Participant left: {:?}, video sink element: {:?}", participant, video_sink_element);
 
                 // Assuming there's a potential operation that returns Result<(), Error>
                 // video_sink_element.set_state(gstreamer::State::Null)?;
@@ -497,7 +499,7 @@ async fn main_inner() -> Result<()> {
                 Ok(())
             } else {
                 // Handle the case where no video sink element is found
-                println!("No video sink element found for participant: {:?}", participant);
+                info!("No video sink element found for participant: {:?}", participant);
                 // Still return Ok(()) since it's not an error condition
                 Ok(())
             }
