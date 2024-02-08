@@ -477,18 +477,25 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-  conference
-    .on_participant_left(move |_conference, participant | {
-      let recv_pipeline_clone = recv_pipeline.clone();
-      Box::pin(async move {
-        info!("Participant left: {:?}", participant);
-        if let Some(bin) = recv_pipeline_clone {
-          if let Some(element) = bin.by_name("video") {
-            println!("Element name");
-          }
-        }
-        Ok(())
-      })
+    conference
+    .on_participant_left(move |_conference, participant| {
+        let recv_pipeline = recv_pipeline_clone.clone(); // Clone again if needed for the async block
+        Box::pin(async move {
+            // Use recv_pipeline here
+            if let Some(pipeline) = recv_pipeline {
+                // Here you can perform operations with the pipeline,
+                // e.g., removing elements related to the participant that left.
+                // This is just a placeholder example to demonstrate usage.
+                info!("Participant left: {:?}", participant);
+                // Example operation: find a specific element by name and do something
+                if let Some(element) = pipeline.by_name(&format!("participant_{}", participant.muc_jid.resource)) {
+                    // Perform operations with the element, such as unlinking it or setting it to NULL state
+                    info!("Found element for the participant that left: {:?}", element.name());
+                    // Note: Actual operation here will depend on what you need to do with the element
+                }
+            }
+            Ok(())
+        })
     })
     .await;
 
