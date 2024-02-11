@@ -473,6 +473,7 @@ async fn main_inner() -> Result<()> {
             "name",
             format!("participant_{}", participant.muc_jid.resource),
           );
+          bin.set_property("autoremove", true);
           conference.add_bin(&bin).await?;
         }
 
