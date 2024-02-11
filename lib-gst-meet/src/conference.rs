@@ -160,7 +160,7 @@ impl fmt::Debug for JitsiConferenceInner {
 }
 
 impl JitsiConference {
-  #[tracing::instrument(level = "debug", err)]
+  #[tracing::instrument(level = "info", err)]
   pub async fn join(
     xmpp_connection: Connection,
     glib_main_context: glib::MainContext,
@@ -254,18 +254,18 @@ impl JitsiConference {
     Ok(conference)
   }
 
-  #[tracing::instrument(level = "debug", err)]
+  #[tracing::instrument(level = "info", err)]
   pub async fn leave(self) -> Result<()> {
     if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-      debug!("pausing all sinks");
+      info!("pausing all sinks");
       jingle_session.pause_all_sinks();
 
-      debug!("setting pipeline state to NULL");
+      info!("setting pipeline state to NULL");
       if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
         warn!("failed to set pipeline state to NULL: {:?}", e);
       }
 
-      debug!("waiting for state change to complete");
+      info!("waiting for state change to complete");
       let _ = jingle_session.pipeline_stopped().await;
     }
 
@@ -472,7 +472,7 @@ impl JitsiConference {
       locked_inner.participants.values().cloned().collect()
     };
     for participant in existing_participants {
-      debug!(
+      info!(
         "calling on_participant with existing participant: {:?}",
         participant
       );
@@ -553,7 +553,7 @@ impl StanzaFilter for JitsiConference {
         {
           let muc_user = MucUser::try_from(payload.clone())?;
           if muc_user.status.contains(&MucStatus::SelfPresence) {
-            debug!("Joined MUC: {}", self.config.muc);
+            info!("Joined MUC: {}", self.config.muc);
             self.inner.lock().await.state = Idle;
           }
         }
@@ -563,7 +563,7 @@ impl StanzaFilter for JitsiConference {
           match iq.payload {
             IqType::Get(element) => {
               if let Ok(query) = DiscoInfoQuery::try_from(element) {
-                debug!(
+                info!(
                   "Received disco info query from {} for node {:?}",
                   iq.from.as_ref().unwrap(),
                   query.node
@@ -963,7 +963,7 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                         println!("participant left: {:?}", jid);
+                         info!("participant left: {:?}", jid);
                         // Simulate the timeout using `tokio::time::sleep` 
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
@@ -971,11 +971,11 @@ impl StanzaFilter for JitsiConference {
                           let recorder_domain = env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
 
                           for (_key, participant) in participants {
-                            println!("Participant {:?}", participant);
+                            info!("Participant {:?}", participant);
                             if let Some(FullJid { node, domain, resource }) = &participant.jid {
-                              println!("Domain: {}", domain);
+                              info!("Domain: {}", domain);
                               if recorder_domain.to_string() == domain.to_string() {
-                                println!("Contains '{}'", domain);
+                                info!("Contains '{}'", domain);
                               } else {
                                 real_participant_count = real_participant_count + 1;
                              }
@@ -1012,11 +1012,11 @@ impl StanzaFilter for JitsiConference {
                           .header("Authorization", format!("Bearer {}", auth_token))
                           .send()
                          .await?; // Use await since this is within an async context
-                       println!("Response status code: {}", response.status());
-                       println!("Response body:\n{}", response.text().await?);           
+                         info!("Response status code: {}", response.status());
+                       info!("Response body:\n{}", response.text().await?);           
                     }
                     
-                   debug!("participant left: {:?}", jid);
+                   info!("participant left: {:?}", jid);
                        if let Some(f) = &self
                         .inner
                         .lock()
@@ -1025,7 +1025,7 @@ impl StanzaFilter for JitsiConference {
                         .as_ref()
                         .cloned()
                       {
-                        debug!("calling on_participant_left with old participant");
+                        info!("calling on_participant_left with old participant");
                         if let Err(e) = f(self.clone(), participant).await {
                           warn!("on_participant_left failed: {:?}", e);
                         }
@@ -1039,9 +1039,9 @@ impl StanzaFilter for JitsiConference {
                       .insert(from.resource.clone(), participant.clone())
                       .is_none()
                     {
-                      debug!("new participant: {:?}", jid);
+                      info!("new participant: {:?}", jid);
                       if let Some(f) = &self.inner.lock().await.on_participant.as_ref().cloned() {
-                        debug!("calling on_participant with new participant");
+                        info!("calling on_participant with new participant");
                         if let Err(e) = f(self.clone(), participant.clone()).await {
                           warn!("on_participant failed: {:?}", e);
                         }
