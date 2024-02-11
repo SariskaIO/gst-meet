@@ -811,7 +811,7 @@ impl JingleSession {
                   .filter(|codec| codec.is_audio())
                   .find(|codec| codec.is(pt));
                 if let Some(codec) = codec {
-                  gstreamer::ElementFactory::make(codec.depayloader_name()).build()?
+                  gstreamer::ElementFactory::make(codec.depayloader_name()).property("autoremove", true).build()?
                 }
                 else {
                   bail!("received audio with unsupported PT {}", pt);
@@ -823,7 +823,7 @@ impl JingleSession {
                   .filter(|codec| codec.is_video())
                   .find(|codec| codec.is(pt));
                 if let Some(codec) = codec {
-                  gstreamer::ElementFactory::make(codec.depayloader_name()).build()?
+                  gstreamer::ElementFactory::make(codec.depayloader_name()).property("autoremove", true).build()?
                 }
                 else {
                   bail!("received video with unsupported PT {}", pt);
