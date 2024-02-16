@@ -972,9 +972,13 @@ impl JingleSession {
                 },
               };
               if let Some(sink_element) = maybe_sink_element {
+                // Get the sink pad from the sink element
+
                 let sink_pad = sink_element
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                
+                // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
                   Some(&format!(
                     "participant_{}_{:?}_{}",
@@ -982,6 +986,8 @@ impl JingleSession {
                   )),
                   &sink_pad,
                 )?;
+
+                // Get the pad of the bin
                 let bin: Bin = sink_element
                   .parent()
                   .context("sink element has no parent")?
@@ -989,6 +995,7 @@ impl JingleSession {
                   .map_err(|_| anyhow!("sink element's parent is not a bin"))?;
                 bin.add_pad(&ghost_pad)?;
 
+                // Link the decoder to the ghost pad
                 src_pad
                   .link(&ghost_pad)
                   .context("failed to link decode chain to participant bin from recv pipeline")?;
@@ -997,6 +1004,8 @@ impl JingleSession {
                   participant_id, source.media_type
                 );
               }
+
+              // This is for when we have recv participant pipelines per participant
               else if let Some(participant_bin) =
                 pipeline.by_name(&format!("participant_{}", participant_id))
               {

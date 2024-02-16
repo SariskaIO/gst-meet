@@ -964,7 +964,7 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left: {:?}", jid);
-                        // Simulate the timeout using `tokio::time::sleep` 
+                        // Simulate the timeout using `tokio::time::sleep`                         
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
                           let mut real_participant_count = 0;
@@ -981,9 +981,12 @@ impl StanzaFilter for JitsiConference {
                              }
                            }
                          }
+                         // returns the real participant count
                          real_participant_count
                       }
                    let reconnect_window_str = env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
+
+                   // The reconnect window is set to 60 seconds by default if the RECONNECT_WINDOW is not set
                    let reconnect_window = if reconnect_window_str == "none" {
                      60000                   
                     } else {
@@ -991,6 +994,8 @@ impl StanzaFilter for JitsiConference {
                     };
 
                     tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
+
+                    // Get the participants from the inner lock
                     let participants = &self
                          .inner
                           .lock()
@@ -998,6 +1003,10 @@ impl StanzaFilter for JitsiConference {
                           .participants;
                      
                      let participants_count = get_real_participants(participants.clone());
+
+                     // TODO: Print to check the participants count
+
+                     // Stop the live stream/recording if the participants count is 0
                      if participants_count == 0 {
                         let client = reqwest::Client::new(); // Use reqwest::Client for sending HTTP requests
                         let api_host = env::var("API_HOST").unwrap_or("none".to_string());
@@ -1016,6 +1025,7 @@ impl StanzaFilter for JitsiConference {
                        println!("Response body:\n{}", response.text().await?);           
                     }
                     
+                    // Call the on_participant_left function 
                    debug!("participant left: {:?}", jid);
                        if let Some(f) = &self
                         .inner
@@ -1026,7 +1036,9 @@ impl StanzaFilter for JitsiConference {
                         .cloned()
                       {
                         debug!("calling on_participant_left with old participant");
+                        info!("calling on_participant_left with old participant");
                         if let Err(e) = f(self.clone(), participant).await {
+                          info!("on_participant_left failed: {:?}", e);
                           warn!("on_participant_left failed: {:?}", e);
                         }
                       }
