@@ -276,12 +276,12 @@ impl JitsiConference {
     Ok(())
   }
 
-  pub async fn leaving(self) -> Result<()>{
-    if let Some(jingle_session) = self.jingle_session.lock().await.take(){
-      let Some(pipeline) = jingle_session.pipeline();
-      pipeline.set_state(gstreamer::State::Null);
-    }
-  }
+  // pub async fn leaving(self) -> Result<()>{
+  //   if let Some(jingle_session) = self.jingle_session.lock().await.take(){
+  //     let Some(pipeline) = jingle_session.pipeline();
+  //     pipeline.set_state(gstreamer::State::Null);
+  //   }
+  // }
 
   fn endpoint_id(&self) -> Result<&str> {
     self
