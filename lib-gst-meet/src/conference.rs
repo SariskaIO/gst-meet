@@ -1,3 +1,4 @@
+use core::ascii;
 use std::{
   collections::HashMap, convert::TryFrom, fmt, future::Future, pin::Pin, sync::Arc, time::Duration,
 };
@@ -261,6 +262,7 @@ impl JitsiConference {
       jingle_session.pause_all_sinks();
 
       debug!("setting pipeline state to NULL");
+      info!("Setting pipeline state to NULL");
       if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
         warn!("failed to set pipeline state to NULL: {:?}", e);
       }
@@ -272,6 +274,13 @@ impl JitsiConference {
     // should leave the XMPP muc gracefully, instead of just disconnecting
 
     Ok(())
+  }
+
+  pub async fn leaving(self) -> Result<()>{
+    if let Some(jingle_session) = self.jingle_session.lock().await.take(){
+      let Some(pipeline) = jingle_session.pipeline();
+      pipeline.set_state(gstreamer::State::Null);
+    }
   }
 
   fn endpoint_id(&self) -> Result<&str> {
@@ -332,7 +341,16 @@ impl JitsiConference {
   #[tracing::instrument(level = "debug", err)]
   pub async fn add_bin(&self, bin: &gstreamer::Bin) -> Result<()> {
     let pipeline = self.pipeline().await?;
+    info!("Adding to the bin to the pipeline");
     pipeline.add(bin)?;
+    bin.sync_state_with_parent()?;
+    Ok(())
+  }
+
+  #[tracing::instrument(level = "debug", err)]
+  pub async fn remove_bin(&self, bin: &gstreamer::Bin) -> Result<()> {
+    let pipeline = self.pipeline().await?;
+    pipeline.remove(bin)?;
     bin.sync_state_with_parent()?;
     Ok(())
   }
@@ -494,7 +512,9 @@ impl JitsiConference {
     &self,
     f: impl (Fn(JitsiConference, Participant) -> BoxedResultFuture) + Send + Sync + 'static,
   ) {
+    info!("Random info: On Participant left");
     self.inner.lock().await.on_participant_left = Some(Arc::new(f));
+    
   }
 
   #[tracing::instrument(level = "trace", skip(f))]
@@ -963,7 +983,10 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                         println!("participant left: {:?}", jid);
+                         println!("participant left here: {:?}", jid);
+
+                         
+
                         // Simulate the timeout using `tokio::time::sleep`                         
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
