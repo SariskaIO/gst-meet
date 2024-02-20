@@ -310,7 +310,7 @@ impl JingleSession {
         .owner
         .clone();
 
-      debug!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
+      info!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
       remote_ssrc_map.insert(
         ssrc.id,
         Source {
@@ -802,7 +802,7 @@ impl JingleSession {
               )
             })?;
 
-            debug!("pad added for remote source: {:?}", source);
+            info!("pad added for remote source: {:?}", source);
 
             let depayloader = match source.media_type {
               MediaType::Audio => {

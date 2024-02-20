@@ -985,7 +985,39 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left here: {:?}", jid);
+                          fn get_key_by_participant_id(map: &HashMap<u32, Source>, target_participant_id: u32) -> Option<u32> {
+                            for (key, source) in map.iter() {
+                                if source.participant_id == target_participant_id {
+                                    return Some(*key);
+                                }
+                            }
+                            None
+                          }
 
+                          fn participant_id_for_owner(owner: String) -> Result<Option<String>> {
+                            if owner == "jvb" {
+                              Ok(None)
+                            }
+                            else {
+                              Ok(Some(
+                                if owner.contains('/') {
+                                  owner
+                                    .split('/')
+                                    .nth(1)
+                                    .context("invalid ssrc-info owner")?
+                                    .to_owned()
+                                }
+                                else {
+                                  owner
+                                }
+                              ))
+                            }
+                          }
+
+                          match get_key_by_participant_id(&remote_ssrc_map, participant_id_for_owner(jid)) {
+                            Some(key) => println!("Found key: {}", key),
+                            None => println!("Participant ID not found: {}", target_participant_id),
+                          }
 
                          if let Some(jingle_session) = self.jingle_session.lock().await.take(){
                             info!("pausing all sinks");
@@ -999,6 +1031,7 @@ impl StanzaFilter for JitsiConference {
                                 .context("no suitable sink pad provided by sink element in recv pipeline")?;
                               info!("release the request pad");
                               compositor.release_request_pad(&sink_pad);
+                              compositor.sync_state_with_parent();
                               }
                             } else {
                                 // Handle the case when the result is None
