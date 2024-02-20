@@ -995,8 +995,7 @@ impl StanzaFilter for JitsiConference {
                               info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
                               let ghost_pad = jingle_session.pipeline().by_name(
-                                format!("participant_{}_{:?}_{}", option, MediaType::Video, key)
-                                  .as_str(),
+                               "participant_{}_{:?}_{}", option, MediaType::Video, key
                               );
 
                               info!("Ghost Pad: {:?}", ghost_pad);
