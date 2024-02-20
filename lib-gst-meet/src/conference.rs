@@ -995,9 +995,12 @@ impl StanzaFilter for JitsiConference {
                                 format!("participant_{}_{:?}_{}", option, MediaType::Video, key)
                                   .as_str(),
                               );
+
+                              info!("Ghost Pad: {:?}", ghost_pad);
+
                               if let Some(ghost_pad) = ghost_pad {
-                                compositor.release_request_pad(&ghost_pad);
-                                compositor.sync_state_with_parent();
+                                //compositor.release_request_pad(&ghost_pad);
+                                //compositor.sync_state_with_parent();
                               }
                             }
                           }
