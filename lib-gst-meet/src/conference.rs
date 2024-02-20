@@ -993,6 +993,8 @@ impl StanzaFilter for JitsiConference {
 
                             for (key, source) in map.iter() {
                               let option = source.participant_id.clone().unwrap_or_default();
+                              info!("Option: {:?}", option);
+                              info!("JID: {:?}", jid.resource.clone().to_string());
                               if option == jid.resource.clone().to_string() {
                                   info!("Key: {}", key);
                               }
