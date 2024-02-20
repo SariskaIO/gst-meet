@@ -992,9 +992,12 @@ impl StanzaFilter for JitsiConference {
                             jingle_session.pause_all_sinks();
                             if let Some(maybe_sink_element) = self.remote_participant_video_sink_element().await {
                               // Do something with video_sink_element
+                              info!("get the compositor");
                               if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                                info!("get the sink pad");
                               let sink_pad = maybe_sink_element.request_pad_simple("sink_%u")
                                 .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                              info!("release the request pad");
                               compositor.release_request_pad(&sink_pad);
                               }
                             } else {
