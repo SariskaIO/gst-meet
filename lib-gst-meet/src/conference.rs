@@ -991,7 +991,7 @@ impl StanzaFilter for JitsiConference {
                           // get the compositor element names video from pipeline
                           let compositor = jingle_session.pipeline().by_name("video");
                           if let Some(compositor) = compositor {
-                            info!("removing compositor: {:?}", element.get_request_pad("src_0"));
+                            info!("removing compositor: {:?}", compositor.get_request_pad("src_0"));
                             //compositor.release_request_pad();
                           }
                         }
