@@ -987,36 +987,27 @@ impl StanzaFilter for JitsiConference {
                          info!("participant left here: {:?}", jid);
                          info!("participant id: {:?}", jid.resource.clone().to_string());
                          if let Some(jingle_session) = self.jingle_session.lock().await.take(){
-                            info!("pausing all sinks");
                             jingle_session.pause_all_sinks();
                             let map: HashMap<u32, crate::source::Source> = jingle_session.remote_ssrc_map.clone();
-
                             for (key, source) in map.iter() {
                               let option = source.participant_id.clone().unwrap_or_default();
                               info!("Option: {:?}", option);
                               info!("JID: {:?}", jid.node.clone().unwrap_or_default().to_string());
-                              if option == jid.node.clone().unwrap_or_default().to_string(){
+                              if (option == jid.node.clone().unwrap_or_default().to_string() && source.media_type == MediaType::Video){
                                   info!("Key: {}", key);
+                                  if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                                    info!("get the sink pad");
+                                    let ghost_pad = jingle_session.pipeline().by_name(format!(
+                                      "participant_{}_{:?}_{}",
+                                      option, MediaType::Video, key
+                                    ));
+                                    compositor.release_request_pad(&sink_pad);
+                                    compositor.sync_state_with_parent();
+                                  }
                               }
                             }
-
                             // print map below
                             info!("Remote SSRC Map: {:?}", map);
-                            
-                            if let Some(maybe_sink_element) = self.remote_participant_video_sink_element().await {
-                              // Do something with video_sink_element
-                              info!("get the compositor");
-                              if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                                info!("get the sink pad");
-                              let sink_pad = maybe_sink_element.request_pad_simple("sink_%u")
-                                .context("no suitable sink pad provided by sink element in recv pipeline")?;
-                              info!("release the request pad");
-                              compositor.release_request_pad(&sink_pad);
-                              compositor.sync_state_with_parent();
-                              }
-                            } else {
-                                // Handle the case when the result is None
-                            }
                          }
                         // Simulate the timeout using `tokio::time::sleep`                               
 
