@@ -988,6 +988,9 @@ impl JingleSession {
                 )?;
 
                 info!("Ghost Pad: {:?}", ghost_pad);
+                info!("participant_id: {:?}", participant_id);
+                info!("source.media_type: {:?}", source.media_type);
+                info!("source.ssrc: {:?}", source.ssrc);
 
                 // Get the pad of the bin
                 let bin: Bin = sink_element
