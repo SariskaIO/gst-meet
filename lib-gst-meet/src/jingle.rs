@@ -987,6 +987,8 @@ impl JingleSession {
                   &sink_pad,
                 )?;
 
+                info!("Ghost Pad: {:?}", ghost_pad);
+
                 // Get the pad of the bin
                 let bin: Bin = sink_element
                   .parent()
