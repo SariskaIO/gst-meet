@@ -984,51 +984,20 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                         println!("participant left here: {:?}", jid);
-                         println!("participant id: {:?}", jid.resource.clone());
-                          // fn get_key_by_participant_id(target_participant_id: &str) -> Option<u32> {
-                          //   // Todo: Add the logic to get the key by participant id
-
-                          //   // get the remote_ssrc_map from jingle session
-                          //   let map = jingle_session.lock().await.remote_ssrc_map.clone();
-                            
-                          //   for (key, source) in map.iter() {
-                          //       if source.participant_id == target_participant_id {
-                          //           return Some(*key);
-                          //       }
-                          //   }
-                          //   None
-                          // }
-
-                          // fn participant_id_for_owner(owner: FullJid) -> Result<Option<String>> {
-                          //   if owner == "jvb" {
-                          //     Ok(None)
-                          //   }
-                          //   else {
-                          //     Ok(Some(
-                          //       if owner.contains('/') {
-                          //         owner
-                          //           .split('/')
-                          //           .nth(1)
-                          //           .context("invalid ssrc-info owner")?
-                          //           .to_owned()
-                          //       }
-                          //       else {
-                          //         owner
-                          //       }
-                          //     ))
-                          //   }
-                          // }
-
-                          // match get_key_by_participant_id(&jid.resource.clone()) {
-                          //   Some(key) => println!("Found key: {}", key),
-                          //   None => println!("Participant ID not found: {}", target_participant_id),
-                          // }
-
+                         info!("participant left here: {:?}", jid);
+                         info!("participant id: {:?}", jid.resource.clone().to_string());
                          if let Some(jingle_session) = self.jingle_session.lock().await.take(){
                             info!("pausing all sinks");
                             jingle_session.pause_all_sinks();
                             let map: HashMap<u32, crate::source::Source> = jingle_session.remote_ssrc_map.clone();
+
+                            for (key, source) in map.iter() {
+                              let option = source.participant_id.clone.unwrap_or_default();
+                              if option == jid.resource.clone().to_string() {
+                                  info!("Key: {}", key);
+                              }
+                            }
+
                             // print map below
                             info!("Remote SSRC Map: {:?}", map);
                             
