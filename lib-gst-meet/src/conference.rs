@@ -988,22 +988,23 @@ impl StanzaFilter for JitsiConference {
                         // Simulate the timeout using `tokio::time::sleep`                         
 
                         // Do something here
-
-                        // Call the on_participant_left function
-                        if let Some(f) = &self
-                          .inner
-                          .lock()
-                          .await
-                          .on_participant_left
-                          .as_ref()
-                          .cloned()
+                      
                         {
-                          debug!("calling on_participant_left with old participant");
-                          info!("calling on_participant_left with old participant");
-                          if let Err(e) = f(self.clone(), participant).await {
-                            info!("on_participant_left failed: {:?}", e);
-                            warn!("on_participant_left failed: {:?}", e);
+                          if let Some(jingle_session) = self.jingle_session.lock().await.take() {
+                            info!("pausing all sinks");
+                            jingle_session.pause_all_sinks();
+                      
+                            info!("setting pipeline state to NULL");
+                            if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
+                              warn!("failed to set pipeline state to NULL: {:?}", e);
+                            }
+                      
+                            info!("waiting for state change to complete");
+                            let _ = jingle_session.pipeline_stopped().await;
                           }
+              
+                      
+      
                         }
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
