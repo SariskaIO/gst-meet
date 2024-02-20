@@ -4,9 +4,9 @@ use std::{
 };
 
 use glib::CastNone;
-use serde_json::json;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
+use serde_json::json;
 use std::env;
 use std::thread;
 
@@ -431,7 +431,6 @@ impl JitsiConference {
       .await
   }
 
-
   pub async fn send_json_message<T: Serialize>(&self, payload: &T) -> Result<()> {
     let message = Message {
       from: Some(Jid::Full(self.jid.clone())),
@@ -465,8 +464,7 @@ impl JitsiConference {
       if let Some(f) = self.inner.lock().await.on_participant.as_ref().cloned() {
         if let Err(e) = f(self.clone(), participant.clone()).await {
           warn!("on_participant failed: {:?}", e);
-        }
-        else if let Ok(pipeline) = self.pipeline().await {
+        } else if let Ok(pipeline) = self.pipeline().await {
           gstreamer::debug_bin_to_dot_file(
             &pipeline,
             gstreamer::DebugGraphDetails::ALL,
@@ -497,8 +495,7 @@ impl JitsiConference {
       );
       if let Err(e) = f(self.clone(), participant.clone()).await {
         warn!("on_participant failed: {:?}", e);
-      }
-      else if let Ok(pipeline) = self.pipeline().await {
+      } else if let Ok(pipeline) = self.pipeline().await {
         gstreamer::debug_bin_to_dot_file(
           &pipeline,
           gstreamer::DebugGraphDetails::ALL,
@@ -515,7 +512,6 @@ impl JitsiConference {
   ) {
     info!("Random info: On Participant left");
     self.inner.lock().await.on_participant_left = Some(Arc::new(f));
-    
   }
 
   #[tracing::instrument(level = "trace", skip(f))]
@@ -556,8 +552,7 @@ impl StanzaFilter for JitsiConference {
           if !ready {
             bail!("focus reports room not ready");
           }
-        }
-        else {
+        } else {
           bail!("focus IQ failed");
         };
 
@@ -615,8 +610,7 @@ impl StanzaFilter for JitsiConference {
                       self.xmpp_tx.send(iq.into()).await?;
                     },
                   }
-                }
-                else {
+                } else {
                   let iq = Iq::from_result(iq.id, Some(DISCO_INFO.clone()))
                     .with_from(Jid::Full(self.jid.clone()))
                     .with_to(iq.from.unwrap());
@@ -636,12 +630,10 @@ impl StanzaFilter for JitsiConference {
 
                       *self.jingle_session.lock().await =
                         Some(JingleSession::initiate(self, jingle).await?);
-                    }
-                    else {
+                    } else {
                       debug!("Ignored Jingle session-initiate from {}", from_jid);
                     }
-                  }
-                  else if jingle.action == Action::SourceAdd {
+                  } else if jingle.action == Action::SourceAdd {
                     debug!("Received Jingle source-add");
 
                     // Acknowledge the IQ
@@ -658,8 +650,7 @@ impl StanzaFilter for JitsiConference {
                       .source_add(jingle)
                       .await?;
                   }
-                }
-                else {
+                } else {
                   debug!("Received Jingle IQ from invalid JID: {:?}", iq.from);
                 }
               },
@@ -702,12 +693,8 @@ impl StanzaFilter for JitsiConference {
                             .await
                             .ok()
                             .and_then(|pipeline| pipeline.by_name("rtpbin"))
-                            .map(|rtpbin| {
-                              rtpbin.emit_by_name("get-session", &[&0u32])
-                            })
-                            .map(|rtpsession: gstreamer::Element| {
-                              rtpsession.property("stats")
-                            })
+                            .map(|rtpbin| rtpbin.emit_by_name("get-session", &[&0u32]))
+                            .map(|rtpsession: gstreamer::Element| rtpsession.property("stats"))
                             .and_then(|stats: gstreamer::Structure| stats.get("source-stats").ok())
                             .and_then(|stats: glib::ValueArray| {
                               stats
@@ -866,8 +853,7 @@ impl StanzaFilter for JitsiConference {
                             if let Err(e) = colibri_channel.send(stats).await {
                               warn!("failed to send stats: {:?}", e);
                             }
-                          }
-                          else {
+                          } else {
                             warn!("unable to get stats from pipeline");
                           }
                           interval.tick().await;
@@ -934,8 +920,7 @@ impl StanzaFilter for JitsiConference {
             },
             _ => {},
           }
-        }
-        else if let Ok(presence) = Presence::try_from(element) {
+        } else if let Ok(presence) = Presence::try_from(element) {
           if let Jid::Full(from) = presence
             .from
             .as_ref()
@@ -958,7 +943,10 @@ impl StanzaFilter for JitsiConference {
               {
                 // Hack until https://gitlab.com/xmpp-rs/xmpp-rs/-/issues/88 is resolved
                 // We're not interested in the actor element, and xmpp-parsers fails to parse it, so just remove it.
-                for item in muc_user_payload.children_mut().filter(|child| child.name() == "item") {
+                for item in muc_user_payload
+                  .children_mut()
+                  .filter(|child| child.name() == "item")
+                {
                   while item.remove_child("actor", ns::MUC_USER).is_some() {}
                 }
 
@@ -984,103 +972,110 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                         info!("participant left here: {:?}", jid);
-                         info!("participant id: {:?}", jid.resource.clone().to_string());
-                         if let Some(jingle_session) = self.jingle_session.lock().await.take(){
-                            jingle_session.pause_all_sinks();
-                            let map: HashMap<u32, crate::source::Source> = jingle_session.remote_ssrc_map.clone();
-                            for (key, source) in map.iter() {
-                              let option = source.participant_id.clone().unwrap_or_default();
-                              info!("Option: {:?}", option);
-                              info!("JID: {:?}", jid.node.clone().unwrap_or_default().to_string());
-                              if (option == jid.node.clone().unwrap_or_default().to_string() && source.media_type == MediaType::Video){
-                                  info!("Key: {}", key);
-                                  if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                                    info!("get the sink pad");
-                                    let ghost_pad = jingle_session.pipeline().by_name(format!(
-                                      "participant_{}_{:?}_{}",
-                                      option, MediaType::Video, key
-                                    ));
-                                    compositor.release_request_pad(&ghost_pad);
-                                    compositor.sync_state_with_parent();
-                                  }
+                      info!("participant left here: {:?}", jid);
+                      info!("participant id: {:?}", jid.resource.clone().to_string());
+                      if let Some(jingle_session) = self.jingle_session.lock().await.take() {
+                        jingle_session.pause_all_sinks();
+                        let map: HashMap<u32, crate::source::Source> =
+                          jingle_session.remote_ssrc_map.clone();
+                        for (key, source) in map.iter() {
+                          let option = source.participant_id.clone().unwrap_or_default();
+                          info!("Option: {:?}", option);
+                          info!(
+                            "JID: {:?}",
+                            jid.node.clone().unwrap_or_default().to_string()
+                          );
+                          if (option == jid.node.clone().unwrap_or_default().to_string()
+                            && source.media_type == MediaType::Video)
+                          {
+                            info!("Key: {}", key);
+                            if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                              info!("get the sink pad");
+                              let ghost_pad = jingle_session.pipeline().by_name(
+                                format!("participant_{}_{:?}_{}", option, MediaType::Video, key)
+                                  .as_str(),
+                              );
+                              if let Some(ghost_pad) = ghost_pad {
+                                compositor.release_request_pad(&ghost_pad);
+                                compositor.sync_state_with_parent();
                               }
                             }
-                            // print map below
-                            info!("Remote SSRC Map: {:?}", map);
-                         }
-                        // Simulate the timeout using `tokio::time::sleep`                               
-
-                        fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
-                          let mut real_participant_count = 0;
-                          let recorder_domain = env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
-
-                          for (_key, participant) in participants {
-                            println!("Participant {:?}", participant);
-                            if let Some(FullJid { node, domain, resource }) = &participant.jid {
-                              println!("Domain: {}", domain);
-                              if recorder_domain.to_string() == domain.to_string() {
-                                println!("Contains '{}'", domain);
-                              } else {
-                                real_participant_count = real_participant_count + 1;
-                             }
-                           }
-                         }
-                         // returns the real participant count
-                         real_participant_count
+                          }
+                        }
+                        // print map below
+                        info!("Remote SSRC Map: {:?}", map);
                       }
-                   let reconnect_window_str = env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
+                      // Simulate the timeout using `tokio::time::sleep`
 
-                   // The reconnect window is set to 60 seconds by default if the RECONNECT_WINDOW is not set
-                   let reconnect_window = if reconnect_window_str == "none" {
-                     60000                   
-                    } else {
-                       reconnect_window_str.parse::<u64>().unwrap_or(60000)
-                    };
+                      fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
+                        let mut real_participant_count = 0;
+                        let recorder_domain =
+                          env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
 
-                    tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
+                        for (_key, participant) in participants {
+                          println!("Participant {:?}", participant);
+                          if let Some(FullJid {
+                            node,
+                            domain,
+                            resource,
+                          }) = &participant.jid
+                          {
+                            println!("Domain: {}", domain);
+                            if recorder_domain.to_string() == domain.to_string() {
+                              println!("Contains '{}'", domain);
+                            } else {
+                              real_participant_count = real_participant_count + 1;
+                            }
+                          }
+                        }
+                        // returns the real participant count
+                        real_participant_count
+                      }
+                      let reconnect_window_str =
+                        env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
 
-                    // Get the participants from the inner lock
-                    let participants = &self
-                         .inner
-                          .lock()
-                          .await
-                          .participants;
-                     
-                     let participants_count = get_real_participants(participants.clone());
+                      // The reconnect window is set to 60 seconds by default if the RECONNECT_WINDOW is not set
+                      let reconnect_window = if reconnect_window_str == "none" {
+                        60000
+                      } else {
+                        reconnect_window_str.parse::<u64>().unwrap_or(60000)
+                      };
 
-                     // TODO: Print to check the participants count
+                      tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
 
-                     // Stop the live stream/recording if the participants count is 0
-                     if participants_count == 0 {
+                      // Get the participants from the inner lock
+                      let participants = &self.inner.lock().await.participants;
+
+                      let participants_count = get_real_participants(participants.clone());
+
+                      // TODO: Print to check the participants count
+
+                      // Stop the live stream/recording if the participants count is 0
+                      if participants_count == 0 {
                         let client = reqwest::Client::new(); // Use reqwest::Client for sending HTTP requests
                         let api_host = env::var("API_HOST").unwrap_or("none".to_string());
-                        let url = format!("https://{}/terraform/v1/hooks/srs/stopRecording", api_host);
+                        let url =
+                          format!("https://{}/terraform/v1/hooks/srs/stopRecording", api_host);
                         let data = json!({
                             "room_name": env::var("ROOM_NAME").unwrap_or("none".to_string())
                         });
                         let auth_token = env::var("AUTH_TOKEN").unwrap_or("none".to_string());
                         let response = client
-                           .post(&url)
-                           .json(&data)
+                          .post(&url)
+                          .json(&data)
                           .header("Authorization", format!("Bearer {}", auth_token))
                           .send()
-                         .await?; // Use await since this is within an async context
-                       println!("Response status code: {}", response.status());
-                       println!("Response body:\n{}", response.text().await?);           
-                    }
-                    
-                    // Call the on_participant_left function  // for some reason this is not working
-                   info!("participant left: {:?}", jid);
+                          .await?; // Use await since this is within an async context
+                        println!("Response status code: {}", response.status());
+                        println!("Response body:\n{}", response.text().await?);
+                      }
 
+                      // Call the on_participant_left function  // for some reason this is not working
+                      info!("participant left: {:?}", jid);
 
-                    // Write code to call jingle_session.stop() here
-            
+                      // Write code to call jingle_session.stop() here
 
-
-
-                   
-                       if let Some(f) = &self
+                      if let Some(f) = &self
                         .inner
                         .lock()
                         .await
@@ -1095,12 +1090,8 @@ impl StanzaFilter for JitsiConference {
                           warn!("on_participant_left failed: {:?}", e);
                         }
                       }
-
-
                     }
-                    
                     // if the presense type is not unavailable, then add the participant
-
                     else if self
                       .inner
                       .lock()
@@ -1114,8 +1105,7 @@ impl StanzaFilter for JitsiConference {
                         debug!("calling on_participant with new participant");
                         if let Err(e) = f(self.clone(), participant.clone()).await {
                           warn!("on_participant failed: {:?}", e);
-                        }
-                        else if let Some(jingle_session) =
+                        } else if let Some(jingle_session) =
                           self.jingle_session.lock().await.as_ref()
                         {
                           gstreamer::debug_bin_to_dot_file(
