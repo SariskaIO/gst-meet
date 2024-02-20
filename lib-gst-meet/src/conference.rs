@@ -992,7 +992,7 @@ impl StanzaFilter for JitsiConference {
                             let map: HashMap<u32, crate::source::Source> = jingle_session.remote_ssrc_map.clone();
 
                             for (key, source) in map.iter() {
-                              let option = source.participant_id.clone.unwrap_or_default();
+                              let option = source.participant_id.clone().unwrap_or_default();
                               if option == jid.resource.clone().to_string() {
                                   info!("Key: {}", key);
                               }
