@@ -1007,6 +1007,8 @@ impl StanzaFilter for JitsiConference {
                               let sink_pad = sink_element
                                 .request_pad_simple("sink_%u")
                                 .context("no suitable sink pad provided by sink element in recv pipeline")?;
+
+                              
                               compositor.release_request_pad(&sink_pad);
                             }
                           }
