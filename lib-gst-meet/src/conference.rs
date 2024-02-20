@@ -987,7 +987,7 @@ impl StanzaFilter for JitsiConference {
                          println!("participant left here: {:?}", jid);
 
                          // get the jingle session and pause all sinks
-                         if let Some(jingle_session) = self.jingle_session.lock().await.take() {
+                        if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                           info!("pausing all sinks");
                           jingle_session.pause_all_sinks();
 
@@ -1000,18 +1000,21 @@ impl StanzaFilter for JitsiConference {
                             },
                           };
 
-                          // get the compositor element which is called video 
-                          if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                            if let Some(sink_element) = maybe_sink_element {
-                              info!("removing sink: {:?}", sink_element);
-                              let sink_pad = sink_element
-                                .request_pad_simple("sink_%u")
-                                .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                          
 
-                              
-                              compositor.release_request_pad(&sink_pad);
+                          // get the compositor element which is called video 
+                            if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                              if let Some(sink_element) = maybe_sink_element {
+                                info!("removing sink: {:?}", sink_element);
+                                let sink_pad = sink_element
+                                  .request_pad_simple("sink_%u")
+                                  .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                                
+                                compositor.release_request_pad(&sink_pad);
+
+                              }
                             }
-                          }
+                        }
                       
                     
                         // Simulate the timeout using `tokio::time::sleep`                               
