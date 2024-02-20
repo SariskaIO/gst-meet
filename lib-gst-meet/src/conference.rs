@@ -996,8 +996,11 @@ impl StanzaFilter for JitsiConference {
                               info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
                               let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
-                              let pad = jingle_session.video_sink_element().static_pad(&ghost_pad_name);
 
+                              // write an async function to get the ghost pad
+
+                              //let pad = self.remote_participant_video_sink_element().await.unwrap().static_pad(ghost_pad_name.as_str());
+                              let pad = self.inner.lock().await.video_sink.as_ref().cloned().unwrap().static_pad(ghost_pad_name.as_str());
                               info!("Ghost Pad: {:?}", pad);
 
                               // let ghost_pad = jingle_session.pipeline().by_name(
