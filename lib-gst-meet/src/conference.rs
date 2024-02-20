@@ -993,7 +993,7 @@ impl StanzaFilter for JitsiConference {
                             let sink_pad = jingle_session.video_sink_element()
                               .request_pad_simple("sink_0")
                               .context("no suitable sink pad provided by sink element in recv pipeline")?;
-                            compositor.release_request_pad(&sink_pad)?;
+                            compositor.release_request_pad(&sink_pad);
                             }
                           }
                       
