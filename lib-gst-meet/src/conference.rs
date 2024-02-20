@@ -984,6 +984,29 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left here: {:?}", jid);
+
+                         if let Some(jingle_session) = self.jingle_session.lock().await.take() {
+                          debug!("pausing all sinks");
+                          jingle_session.pause_all_sinks();
+    
+                          // get all the sources from the pipeline
+                          // let sources = jingle_session.pipeline().sources();
+                          // for source in sources {
+                          //   info!("removing source: {:?}", source);
+                          //   if let Err(e) = jingle_session.pipeline().remove(&source) {
+                          //     warn!("failed to remove source: {:?}", e);
+                          //   }
+                          // }
+    
+                          // get the compositor element names video from pipeline
+                          let compositor = jingle_session.pipeline().by_name("video");
+                          if let Some(compositor) = compositor {
+                            info!("removing compositor: {:?}", compositor);
+                            if let Err(e) = jingle_session.pipeline().remove(&compositor) {
+                              warn!("failed to remove compositor: {:?}", e);
+                            }
+                          }
+                        }
                       
                         // Simulate the timeout using `tokio::time::sleep`                               
 
@@ -1051,28 +1074,7 @@ impl StanzaFilter for JitsiConference {
 
 
                     // Write code to call jingle_session.stop() here
-                    if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                      debug!("pausing all sinks");
-                      jingle_session.pause_all_sinks();
-
-                      // get all the sources from the pipeline
-                      // let sources = jingle_session.pipeline().sources();
-                      // for source in sources {
-                      //   info!("removing source: {:?}", source);
-                      //   if let Err(e) = jingle_session.pipeline().remove(&source) {
-                      //     warn!("failed to remove source: {:?}", e);
-                      //   }
-                      // }
-
-                      // get the compositor element names video from pipeline
-                      let compositor = jingle_session.pipeline().by_name("video");
-                      if let Some(compositor) = compositor {
-                        info!("removing compositor: {:?}", compositor);
-                        if let Err(e) = jingle_session.pipeline().remove(&compositor) {
-                          warn!("failed to remove compositor: {:?}", e);
-                        }
-                      }
-                    }
+            
 
 
 
