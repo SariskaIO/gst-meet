@@ -985,27 +985,7 @@ impl StanzaFilter for JitsiConference {
                     {
                          println!("participant left here: {:?}", jid);
                       
-                        // Simulate the timeout using `tokio::time::sleep`                         
-
-                        // Do something here
-                      
-                        {
-                          if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                            info!("pausing all sinks");
-                            jingle_session.pause_all_sinks();
-                      
-                            info!("setting pipeline state to NULL");
-                            if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
-                              warn!("failed to set pipeline state to NULL: {:?}", e);
-                            }
-                      
-                            info!("waiting for state change to complete");
-                            let _ = jingle_session.pipeline_stopped().await;
-                          }
-              
-                      
-      
-                        }
+                        // Simulate the timeout using `tokio::time::sleep`                               
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
                           let mut real_participant_count = 0;
@@ -1066,8 +1046,37 @@ impl StanzaFilter for JitsiConference {
                        println!("Response body:\n{}", response.text().await?);           
                     }
                     
-                    // Call the on_participant_left function 
-                   debug!("participant left: {:?}", jid);
+                    // Call the on_participant_left function  // for some reason this is not working
+                   info!("participant left: {:?}", jid);
+
+
+                    // Write code to call jingle_session.stop() here
+                    if let Some(jingle_session) = self.jingle_session.lock().await.take() {
+                      debug!("pausing all sinks");
+                      jingle_session.pause_all_sinks();
+
+                      // get all the sources from the pipeline
+                      // let sources = jingle_session.pipeline().sources();
+                      // for source in sources {
+                      //   info!("removing source: {:?}", source);
+                      //   if let Err(e) = jingle_session.pipeline().remove(&source) {
+                      //     warn!("failed to remove source: {:?}", e);
+                      //   }
+                      // }
+
+                      // get the compositor element names video from pipeline
+                      let compositor = jingle_session.pipeline().by_name("video");
+                      if let Some(compositor) = compositor {
+                        info!("removing compositor: {:?}", compositor);
+                        if let Err(e) = jingle_session.pipeline().remove(&compositor) {
+                          warn!("failed to remove compositor: {:?}", e);
+                        }
+                      }
+                    }
+
+
+
+                   
                        if let Some(f) = &self
                         .inner
                         .lock()
@@ -1083,7 +1092,12 @@ impl StanzaFilter for JitsiConference {
                           warn!("on_participant_left failed: {:?}", e);
                         }
                       }
+
+
                     }
+                    
+                    // if the presense type is not unavailable, then add the participant
+
                     else if self
                       .inner
                       .lock()
