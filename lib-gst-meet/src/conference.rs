@@ -985,7 +985,12 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left here: {:?}", jid);
-                          fn get_key_by_participant_id(map: &HashMap<u32, Source>, target_participant_id: u32) -> Option<u32> {
+                          fn get_key_by_participant_id(target_participant_id: &str) -> Option<u32> {
+                            // Todo: Add the logic to get the key by participant id
+
+                            // get the remote_ssrc_map from jingle session
+                            let map = jingle_session.lock().await.remote_ssrc_map.clone();
+                            
                             for (key, source) in map.iter() {
                                 if source.participant_id == target_participant_id {
                                     return Some(*key);
@@ -1014,7 +1019,7 @@ impl StanzaFilter for JitsiConference {
                             }
                           }
 
-                          match get_key_by_participant_id(&remote_ssrc_map, participant_id_for_owner(jid)) {
+                          match get_key_by_participant_id(participant_id_for_owner(jid.clone())) {
                             Some(key) => println!("Found key: {}", key),
                             None => println!("Participant ID not found: {}", target_participant_id),
                           }
