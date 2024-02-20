@@ -1,4 +1,5 @@
 use core::ascii;
+use std::fmt::format;
 use std::{
   collections::HashMap, convert::TryFrom, fmt, future::Future, pin::Pin, sync::Arc, time::Duration,
 };
@@ -994,8 +995,12 @@ impl StanzaFilter for JitsiConference {
                               
                               info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
+                              let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
+                              let pad = compositor.static_pad(&ghost_pad_name).clone();
+
                               let ghost_pad = jingle_session.pipeline().by_name(
-                               "participant_{}_{:?}_{}", option, MediaType::Video, key
+                               ("participant_{}_{:?}_{}", option, MediaType::Video, key)
+                                  .as_str()
                               );
 
                               info!("Ghost Pad: {:?}", ghost_pad);
