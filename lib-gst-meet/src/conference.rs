@@ -3,6 +3,7 @@ use std::{
   collections::HashMap, convert::TryFrom, fmt, future::Future, pin::Pin, sync::Arc, time::Duration,
 };
 
+use glib::CastNone;
 use serde_json::json;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
@@ -991,7 +992,7 @@ impl StanzaFilter for JitsiConference {
                           // get the compositor element names video from pipeline
                           let compositor = jingle_session.pipeline().by_name("video");
                           if let Some(compositor) = compositor {
-                            info!("removing compositor: {:?}", compositor.get_request_pad("src_0"));
+                            info!("removing compositor: {:?}", compositor);
                             //compositor.release_request_pad();
                           }
                         }
