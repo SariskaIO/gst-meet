@@ -1019,7 +1019,7 @@ impl StanzaFilter for JitsiConference {
                             }
                           }
 
-                          match get_key_by_participant_id(participant_id_for_owner(jid.clone())) {
+                          match get_key_by_participant_id(participant_id_for_owner(jid.clone().to_string())) {
                             Some(key) => println!("Found key: {}", key),
                             None => println!("Participant ID not found: {}", target_participant_id),
                           }
