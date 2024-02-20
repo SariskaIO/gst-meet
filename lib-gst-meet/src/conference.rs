@@ -998,17 +998,17 @@ impl StanzaFilter for JitsiConference {
                               let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
                               let pad = compositor.static_pad(&ghost_pad_name).clone();
 
-                              let ghost_pad = jingle_session.pipeline().by_name(
-                               ("participant_{}_{:?}_{}", option, MediaType::Video, key)
-                                  .as_str()
-                              );
+                              // let ghost_pad = jingle_session.pipeline().by_name(
+                              //  ("participant_{}_{:?}_{}", option, MediaType::Video, key)
+                              //     .as_str()
+                              // );
 
-                              info!("Ghost Pad: {:?}", ghost_pad);
+                              // info!("Ghost Pad: {:?}", ghost_pad);
 
-                              if let Some(ghost_pad) = ghost_pad {
-                                //compositor.release_request_pad(&ghost_pad);
-                                //compositor.sync_state_with_parent();
-                              }
+                              // if let Some(ghost_pad) = ghost_pad {
+                              //   //compositor.release_request_pad(&ghost_pad);
+                              //   //compositor.sync_state_with_parent();
+                              // }
                             }
                           }
                         }
