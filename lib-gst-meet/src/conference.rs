@@ -984,10 +984,27 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left here: {:?}", jid);
-
-                         
-
+                      
                         // Simulate the timeout using `tokio::time::sleep`                         
+
+                        // Do something here
+
+                        // Call the on_participant_left function
+                        if let Some(f) = &self
+                          .inner
+                          .lock()
+                          .await
+                          .on_participant_left
+                          .as_ref()
+                          .cloned()
+                        {
+                          debug!("calling on_participant_left with old participant");
+                          info!("calling on_participant_left with old participant");
+                          if let Err(e) = f(self.clone(), participant).await {
+                            info!("on_participant_left failed: {:?}", e);
+                            warn!("on_participant_left failed: {:?}", e);
+                          }
+                        }
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
                           let mut real_participant_count = 0;

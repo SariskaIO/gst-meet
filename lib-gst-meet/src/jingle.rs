@@ -1000,7 +1000,7 @@ impl JingleSession {
                   .link(&ghost_pad)
                   .context("failed to link decode chain to participant bin from recv pipeline")?;
                 info!(
-                  "linked {}/{:?} to new pad in recv pipeline",
+                  "linked {}/{:?} to new pad in recv pipeline for all",
                   participant_id, source.media_type
                 );
               }
