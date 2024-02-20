@@ -1001,7 +1001,7 @@ impl StanzaFilter for JitsiConference {
                                       "participant_{}_{:?}_{}",
                                       option, MediaType::Video, key
                                     ));
-                                    compositor.release_request_pad(&sink_pad);
+                                    compositor.release_request_pad(&ghost_pad);
                                     compositor.sync_state_with_parent();
                                   }
                               }
