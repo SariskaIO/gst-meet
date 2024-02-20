@@ -989,19 +989,15 @@ impl StanzaFilter for JitsiConference {
                           info!("pausing all sinks");
                           jingle_session.pause_all_sinks();
                           if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                            info!("removing video sink: {:?}", video_sink_element);
-                            let sink_pad = compositor.request_pad(None, Some("sink_1"), None);
-                            if let Err(e) = sink_pad {
-                              warn!("failed to request sink pad: {:?}", e);
-                            }
-                            else if let Ok(sink_pad) = sink_pad {
-                              if let Err(e) = compositor.release_request_pad(sink_pad).unwrap() {
-                                warn!("failed to unlink video sink: {:?}", e);
-                              }
+                            info!("removing video sink: {:?}", jingle_session.video_sink_element());
+                            let sink_pad = jingle_session.video_sink_element()
+                              .request_pad_simple("sink_%u")
+                              .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                            compositor.release_request_pad(&sink_pad)?;
                             }
                           }
-                        }
                       
+                    
                         // Simulate the timeout using `tokio::time::sleep`                               
 
                         fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
