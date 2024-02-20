@@ -985,6 +985,7 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                          println!("participant left here: {:?}", jid);
+                         println!("participant id: {:?}", jid.resource.clone());
                           fn get_key_by_participant_id(target_participant_id: &str) -> Option<u32> {
                             // Todo: Add the logic to get the key by participant id
 
@@ -999,27 +1000,27 @@ impl StanzaFilter for JitsiConference {
                             None
                           }
 
-                          fn participant_id_for_owner(owner: String) -> Result<Option<String>> {
-                            if owner == "jvb" {
-                              Ok(None)
-                            }
-                            else {
-                              Ok(Some(
-                                if owner.contains('/') {
-                                  owner
-                                    .split('/')
-                                    .nth(1)
-                                    .context("invalid ssrc-info owner")?
-                                    .to_owned()
-                                }
-                                else {
-                                  owner
-                                }
-                              ))
-                            }
-                          }
+                          // fn participant_id_for_owner(owner: FullJid) -> Result<Option<String>> {
+                          //   if owner == "jvb" {
+                          //     Ok(None)
+                          //   }
+                          //   else {
+                          //     Ok(Some(
+                          //       if owner.contains('/') {
+                          //         owner
+                          //           .split('/')
+                          //           .nth(1)
+                          //           .context("invalid ssrc-info owner")?
+                          //           .to_owned()
+                          //       }
+                          //       else {
+                          //         owner
+                          //       }
+                          //     ))
+                          //   }
+                          // }
 
-                          match get_key_by_participant_id(participant_id_for_owner(jid.clone().to_string())) {
+                          match get_key_by_participant_id(&jid.resource.clone()) {
                             Some(key) => println!("Found key: {}", key),
                             None => println!("Participant ID not found: {}", target_participant_id),
                           }
