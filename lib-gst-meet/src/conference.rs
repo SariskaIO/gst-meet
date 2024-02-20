@@ -986,14 +986,19 @@ impl StanzaFilter for JitsiConference {
                     {
                          println!("participant left here: {:?}", jid);
                          if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                          debug!("pausing all sinks");
+                          info!("pausing all sinks");
                           jingle_session.pause_all_sinks();
-    
-                          // get the compositor element names video from pipeline
-                          let compositor = jingle_session.pipeline().by_name("video");
-                          if let Some(compositor) = compositor {
-                            info!("removing compositor: {:?}", compositor);
-                            //compositor.release_request_pad();
+                          if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                            info!("removing video sink: {:?}", video_sink_element);
+                            let sink_pad = compositor.request_pad(None, Some("sink_1"), None);
+                            if let Err(e) = sink_pad {
+                              warn!("failed to request sink pad: {:?}", e);
+                            }
+                            else if let Ok(sink_pad) = sink_pad {
+                              if let Err(e) = compositor.release_request_pad(sink_pad).unwrap() {
+                                warn!("failed to unlink video sink: {:?}", e);
+                              }
+                            }
                           }
                         }
                       
