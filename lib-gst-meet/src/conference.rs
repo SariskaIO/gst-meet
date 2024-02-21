@@ -1028,7 +1028,6 @@ impl StanzaFilter for JitsiConference {
 
                               if let Some(result_element_pad_1) = result_element_pad_1 {
                                 info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                                let some = result_element_pad_1;
                                 compositor.release_request_pad(&result_element_pad_1);
                                 compositor.sync_state_with_parent();
                               }
