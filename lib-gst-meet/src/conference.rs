@@ -1018,11 +1018,11 @@ impl StanzaFilter for JitsiConference {
 
                               let result_element_pad_3 = 
                                 self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
-                              info!("result_element_pad_1: {:?}", result_element_pad_1);
+                              info!("result_element_pad_3: {:?}", result_element_pad_3);
 
                               let result_element_pad_4 = 
                                 self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
-                              info!("result_element_pad_1: {:?}", result_element_pad_1);
+                              info!("result_element_pad_4: {:?}", result_element_pad_4);
 
                               // let pad_list = compositor.pad_list();
 
