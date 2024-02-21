@@ -978,13 +978,13 @@ impl StanzaFilter for JitsiConference {
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                         //jingle_session.pause_all_sinks();
                         
-                        let sink_0 = "sink_0";
+                        let sink_1 = "sink_1";
 
                         let result_element_pad_1 = self
                                 .remote_participant_video_sink_element()
                                 .await
                                 .unwrap()
-                                .static_pad(sink_0);
+                                .static_pad(sink_1);
                         info!("result_element_pad_1: {:?}", result_element_pad_1);
                         
                         if let Some(compositor) = jingle_session.pipeline().by_name("video") {
