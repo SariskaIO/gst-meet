@@ -994,83 +994,8 @@ impl StanzaFilter for JitsiConference {
                             compositor.sync_state_with_parent();
                           }
                         }
-
-                        // let map: HashMap<u32, crate::source::Source> =
-                        //   jingle_session.remote_ssrc_map.clone();
-                        // for (key, source) in map.iter() {
-                        //   let option = source.participant_id.clone().unwrap_or_default();
-                        //   info!("Option: {:?}", option);
-                        //   info!(
-                        //     "JID: {:?}",
-                        //     jid.node.clone().unwrap_or_default().to_string()
-                        //   );
-                        //   if (option == jid.node.clone().unwrap_or_default().to_string()
-                        //     && source.media_type == MediaType::Video)
-                        //   {
-                        //     info!("Key: {}", key);
-                        //     if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                        //       info!("get the sink pad");
-
-                        //       info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
-
-                        //       let sink_0 = "sink_0";
-
-                        //       let sink_1 = "sink_1";
-
-                        //       let ghost_pad_name =
-                        //         format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
-
-                        //       let result_pad1 = compositor.static_pad(sink_0).unwrap();
-                        //       info!("Result pad 1: {:?}", result_pad1);
-
-                        //       let result_pad2 = compositor.static_pad(sink_1);
-                        //       info!("Result pad 2: {:?}", result_pad2);
-
-                        //       let result_element_pad_1 = self
-                        //         .remote_participant_video_sink_element()
-                        //         .await
-                        //         .unwrap()
-                        //         .static_pad(sink_0);
-                        //       info!("result_element_pad_1: {:?}", result_element_pad_1);
-
-                        //       let result_element_pad_2 = self
-                        //         .remote_participant_video_sink_element()
-                        //         .await
-                        //         .unwrap()
-                        //         .static_pad(sink_1);
-
-                        //       info!("result_element_pad_2: {:?}", result_element_pad_2);
-
-                        //       let result_element_pad_3 = self
-                        //         .remote_participant_video_sink_element()
-                        //         .await
-                        //         .unwrap()
-                        //         .static_pad(&ghost_pad_name);
-                        //       info!("result_element_pad_3: {:?}", result_element_pad_3);
-
-                        //       let result_element_pad_4 = self
-                        //         .remote_participant_video_sink_element()
-                        //         .await
-                        //         .unwrap()
-                        //         .static_pad(&ghost_pad_name);
-                        //       info!("result_element_pad_4: {:?}", result_element_pad_4);
-
-                        //       let result_random =
-                        //         result_element_pad_1.get_parent_element().unwrap();
-
-                        //       let some = &result_element_pad_1;
-
-                        //       if let Some(result_element_pad_1) = result_element_pad_1 {
-                        //         info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                        //         compositor.release_request_pad(&result_element_pad_1);
-                        //         compositor.sync_state_with_parent();
-                        //       }
-                        //     }
-                        //   }
-                        // }
-                        // // print map below
-                        // info!("Remote SSRC Map: {:?}", map);
                       }
+
                       // Simulate the timeout using `tokio::time::sleep`
 
                       fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
