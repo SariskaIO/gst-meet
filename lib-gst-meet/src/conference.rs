@@ -995,27 +995,34 @@ impl StanzaFilter for JitsiConference {
                               
                               info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
+                              let sink_0 = "sink_0";
+
+                              let sink_1 = "sink_1";
+
                               let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
-                              let result = compositor.static_pad("sink_1");
-                              info!("Result: {:?}", result);
+                              let result_pad1 = compositor.static_pad(sink_0);
+                              info!("Result pad 1: {:?}", result_pad1);
 
-                              let result2 = 
-                                self.remote_participant_video_sink_element().await.unwrap().request_pad_simple(&ghost_pad_name);
-                              info!("Result2: {:?}", result2);
+                              let result_pad2 = compositor.static_pad(sink_1);
+                              info!("Result pad 2: {:?}", result_pad2);                              
 
-                              let result3 = 
-                                self.remote_participant_video_sink_element().await.unwrap().request_pad_simple("sink_0");
+                              let result_element_pad_1 = 
+                                self.remote_participant_video_sink_element().await.unwrap().static_pad(sink_0);
+                              info!("result_element_pad_1: {:?}", result_element_pad_1);
 
-                              info!("Result3: {:?}", result3);
+                              let result_element_pad_2 = 
+                                self.remote_participant_video_sink_element().await.unwrap().static_pad(sink_1);
 
-                              let result4 = self.inner.lock().await.video_sink.as_ref().cloned().unwrap().request_pad_simple("sink_1");
+                              info!("result_element_pad_2: {:?}", result_element_pad_2);
 
-                              info!("Result4: {:?}", result4);
+                              let result_element_pad_3 = 
+                                self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
+                              info!("result_element_pad_1: {:?}", result_element_pad_1);
 
-                              let result5 = self.inner.lock().await.video_sink.clone();
-
-                              info!("Result5: {:?}", result5);
+                              let result_element_pad_4 = 
+                                self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
+                              info!("result_element_pad_1: {:?}", result_element_pad_1);
 
                               // let pad_list = compositor.pad_list();
 
