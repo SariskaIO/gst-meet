@@ -976,94 +976,100 @@ impl StanzaFilter for JitsiConference {
                       info!("participant left here: {:?}", jid);
                       info!("participant id: {:?}", jid.resource.clone().to_string());
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                        jingle_session.pause_all_sinks();
-                        let map: HashMap<u32, crate::source::Source> =
-                          jingle_session.remote_ssrc_map.clone();
-                        for (key, source) in map.iter() {
-                          let option = source.participant_id.clone().unwrap_or_default();
-                          info!("Option: {:?}", option);
-                          info!(
-                            "JID: {:?}",
-                            jid.node.clone().unwrap_or_default().to_string()
-                          );
-                          if (option == jid.node.clone().unwrap_or_default().to_string()
-                            && source.media_type == MediaType::Video)
-                          {
-                            info!("Key: {}", key);
-                            if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                              info!("get the sink pad");
-                              
-                              info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
+                        //jingle_session.pause_all_sinks();
+                        
+                        let sink_0 = "sink_0";
 
-                              let sink_0 = "sink_0";
-
-                              let sink_1 = "sink_1";
-
-                              let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
-
-                              let result_pad1 = compositor.static_pad(sink_0).unwrap();
-                              info!("Result pad 1: {:?}", result_pad1);
-
-                              let result_pad2 = compositor.static_pad(sink_1);
-                              info!("Result pad 2: {:?}", result_pad2);                              
-
-                              let result_element_pad_1 = 
-                                self.remote_participant_video_sink_element().await.unwrap().static_pad(sink_0);
-                              info!("result_element_pad_1: {:?}", result_element_pad_1);
-
-                              let result_element_pad_2 = 
-                                self.remote_participant_video_sink_element().await.unwrap().static_pad(sink_1);
-
-                              info!("result_element_pad_2: {:?}", result_element_pad_2);
-
-                              let result_element_pad_3 = 
-                                self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
-                              info!("result_element_pad_3: {:?}", result_element_pad_3);
-
-                              let result_element_pad_4 = 
-                                self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
-                              info!("result_element_pad_4: {:?}", result_element_pad_4);
-
-                              let some = &result_element_pad_1;
-
-                              if let Some(result_element_pad_1) = result_element_pad_1 {
-                                info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                                compositor.release_request_pad(&result_element_pad_1);
-                                compositor.sync_state_with_parent();
-                              }
-
-                              // write code to relese request pad for the second pad
-
-
-
-                              //compositor.release_request_pad(&result_element_pad_2);
-
-                              // let pad_list = compositor.pad_list();
-
-                              // info!("Pad List: {:?}", pad_list);
-
-                              // write an async function to get the ghost pad
-
-                              //let pad = self.remote_participant_video_sink_element().await.unwrap().static_pad("");
-                              //let pad = self.inner.lock().await.video_sink.as_ref().cloned().unwrap().request_pad(templ, name, caps);
-                              // info!("Ghost Pad: {:?}", pad);  
-
-                              // let ghost_pad = jingle_session.pipeline().by_name(
-                              //  ("participant_{}_{:?}_{}", option, MediaType::Video, key)
-                              //     .as_str()
-                              // );
-
-                              // info!("Ghost Pad: {:?}", ghost_pad);
-
-                              // if let Some(ghost_pad) = ghost_pad {
-                              //   //compositor.release_request_pad(&ghost_pad);
-                              //   //compositor.sync_state_with_parent();
-                              // }
-                            }
+                        let result_element_pad_1 = self
+                                .remote_participant_video_sink_element()
+                                .await
+                                .unwrap()
+                                .static_pad(sink_0);
+                        info!("result_element_pad_1: {:?}", result_element_pad_1);
+                        
+                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                          if let Some(result_element_pad_1) = result_element_pad_1 {
+                            info!("Result Element Pad 1: {:?}", result_element_pad_1);
+                            compositor.release_request_pad(&result_element_pad_1);
+                            compositor.sync_state_with_parent();
                           }
                         }
-                        // print map below
-                        info!("Remote SSRC Map: {:?}", map);
+
+                        // let map: HashMap<u32, crate::source::Source> =
+                        //   jingle_session.remote_ssrc_map.clone();
+                        // for (key, source) in map.iter() {
+                        //   let option = source.participant_id.clone().unwrap_or_default();
+                        //   info!("Option: {:?}", option);
+                        //   info!(
+                        //     "JID: {:?}",
+                        //     jid.node.clone().unwrap_or_default().to_string()
+                        //   );
+                        //   if (option == jid.node.clone().unwrap_or_default().to_string()
+                        //     && source.media_type == MediaType::Video)
+                        //   {
+                        //     info!("Key: {}", key);
+                        //     if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                        //       info!("get the sink pad");
+
+                        //       info!("participant_{}_{:?}_{}", option, MediaType::Video, key);
+
+                        //       let sink_0 = "sink_0";
+
+                        //       let sink_1 = "sink_1";
+
+                        //       let ghost_pad_name =
+                        //         format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
+
+                        //       let result_pad1 = compositor.static_pad(sink_0).unwrap();
+                        //       info!("Result pad 1: {:?}", result_pad1);
+
+                        //       let result_pad2 = compositor.static_pad(sink_1);
+                        //       info!("Result pad 2: {:?}", result_pad2);
+
+                        //       let result_element_pad_1 = self
+                        //         .remote_participant_video_sink_element()
+                        //         .await
+                        //         .unwrap()
+                        //         .static_pad(sink_0);
+                        //       info!("result_element_pad_1: {:?}", result_element_pad_1);
+
+                        //       let result_element_pad_2 = self
+                        //         .remote_participant_video_sink_element()
+                        //         .await
+                        //         .unwrap()
+                        //         .static_pad(sink_1);
+
+                        //       info!("result_element_pad_2: {:?}", result_element_pad_2);
+
+                        //       let result_element_pad_3 = self
+                        //         .remote_participant_video_sink_element()
+                        //         .await
+                        //         .unwrap()
+                        //         .static_pad(&ghost_pad_name);
+                        //       info!("result_element_pad_3: {:?}", result_element_pad_3);
+
+                        //       let result_element_pad_4 = self
+                        //         .remote_participant_video_sink_element()
+                        //         .await
+                        //         .unwrap()
+                        //         .static_pad(&ghost_pad_name);
+                        //       info!("result_element_pad_4: {:?}", result_element_pad_4);
+
+                        //       let result_random =
+                        //         result_element_pad_1.get_parent_element().unwrap();
+
+                        //       let some = &result_element_pad_1;
+
+                        //       if let Some(result_element_pad_1) = result_element_pad_1 {
+                        //         info!("Result Element Pad 1: {:?}", result_element_pad_1);
+                        //         compositor.release_request_pad(&result_element_pad_1);
+                        //         compositor.sync_state_with_parent();
+                        //       }
+                        //     }
+                        //   }
+                        // }
+                        // // print map below
+                        // info!("Remote SSRC Map: {:?}", map);
                       }
                       // Simulate the timeout using `tokio::time::sleep`
 
