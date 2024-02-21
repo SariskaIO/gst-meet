@@ -997,21 +997,25 @@ impl StanzaFilter for JitsiConference {
 
                               let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
-                              fn your_function(element: &Element, pad: &Pad) -> bool {
-                                // Your logic here
-                                println!("Element: {}, Pad: {}", element, pad);
-                                // Return true to continue iterating, or false to stop the iteration
-                                true
-                            }
+                              let result = compositor.static_pad("sink_1");
+                              info!("Result: {:?}", result);
 
-                              let result = your_element.foreach_pad(your_function);
+                              let result2 = 
+                                self.remote_participant_video_sink_element().await.unwrap().request_pad_simple(&ghost_pad_name);
+                              info!("Result2: {:?}", result2);
 
-                              // Check the result
-                              if result {
-                                  println!("foreach_pad completed successfully");
-                              } else {
-                                  println!("foreach_pad was interrupted");
-                              }
+                              let result3 = 
+                                self.remote_participant_video_sink_element().await.unwrap().request_pad_simple("sink_0");
+
+                              info!("Result3: {:?}", result3);
+
+                              let result4 = self.inner.lock().await.video_sink.as_ref().cloned().unwrap().request_pad_simple("sink_1");
+
+                              info!("Result4: {:?}", result4);
+
+                              let result5 = self.inner.lock().await.video_sink.clone();
+
+                              info!("Result5: {:?}", result5);
 
                               // let pad_list = compositor.pad_list();
 
