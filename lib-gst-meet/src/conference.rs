@@ -1023,7 +1023,7 @@ impl StanzaFilter for JitsiConference {
 
                               // write an async function to get the ghost pad
 
-                              let pad = self.remote_participant_video_sink_element().await.unwrap().static_pad("");
+                              //let pad = self.remote_participant_video_sink_element().await.unwrap().static_pad("");
                               //let pad = self.inner.lock().await.video_sink.as_ref().cloned().unwrap().request_pad(templ, name, caps);
                               info!("Ghost Pad: {:?}", pad);  
 
