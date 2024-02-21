@@ -1001,7 +1001,7 @@ impl StanzaFilter for JitsiConference {
 
                               let ghost_pad_name = format!("participant_{}_{:?}_{}", option, MediaType::Video, key);
 
-                              let result_pad1 = compositor.static_pad(sink_0);
+                              let result_pad1 = compositor.static_pad(sink_0).unwrap();
                               info!("Result pad 1: {:?}", result_pad1);
 
                               let result_pad2 = compositor.static_pad(sink_1);
@@ -1024,7 +1024,9 @@ impl StanzaFilter for JitsiConference {
                                 self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
                               info!("result_element_pad_4: {:?}", result_element_pad_4);
 
-                              compositor.release_request_pad(&result_element_pad_1);
+                              compositor.unwrap().release_request_pad(result_pad1);
+
+
                               //compositor.release_request_pad(&result_element_pad_2);
 
                               // let pad_list = compositor.pad_list();
