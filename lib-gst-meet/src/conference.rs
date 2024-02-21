@@ -1024,7 +1024,7 @@ impl StanzaFilter for JitsiConference {
                                 self.remote_participant_video_sink_element().await.unwrap().static_pad(&ghost_pad_name);
                               info!("result_element_pad_4: {:?}", result_element_pad_4);
 
-                              let audiomixer = compositor.downcast_ref::<gst::Element>().unwrap();
+                              let audiomixer = compositor.downcast_ref::<gstreamer::Element>().unwrap();
                               audiomixer.release_request_pad(result_pad1);
 
 
