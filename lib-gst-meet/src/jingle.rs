@@ -976,7 +976,7 @@ impl JingleSession {
                 &remote_ssrc_map
                   .get_mut(&ssrc)
                   .context(format!("unknown ssrc: {}", ssrc))?
-                  .sink_name = Some(sink_pad_name.as_str().clone());
+                  .sink_name = Some(&sink_pad_name);
 
 
                 // Create a ghost pad for the sink pad and add it to the bin
