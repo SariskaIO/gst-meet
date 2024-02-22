@@ -975,7 +975,7 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                       info!("participant left here: {:?}", jid);
-                      let participant = jid.node.clone().unwrap_or_default().to_string();
+                      let participantId = jid.node.clone().unwrap_or_default().to_string();
 
                       // find the sink related to the participant id
 
@@ -986,7 +986,7 @@ impl StanzaFilter for JitsiConference {
 
                         for source in map.values().filter(|source| {
                           if let Some(participant_id) = &source.participant_id {
-                            *participant_id == participant
+                            *participant_id == participantId
                           } else {
                             println!("participant_id is None");
                             false
@@ -995,7 +995,7 @@ impl StanzaFilter for JitsiConference {
                           if let Some(sink_name) = &source.sink_name {
                             println!(
                               "sink_name for participant {}: {:?}",
-                              participant, sink_name
+                              participantId, sink_name
                             );
                           }
                         }
