@@ -981,13 +981,8 @@ impl StanzaFilter for JitsiConference {
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                         //jingle_session.pause_all_sinks();
 
-                        if let map = jingle_session.remote_ssrc_map.clone() {
-                          for (key, value) in map {
-                            info!("Key: {:?}", key);
-                            info!("Value: {:?}", value);
-                          }
-                        }
-
+                        let mut map = jingle_session.remote_ssrc_map.clone();
+                        
                         if let Some(source) = map
                           .values()
                           .find(|&source| source.participant_id == jid.node.clone().unwrap_or_default().to_string())
