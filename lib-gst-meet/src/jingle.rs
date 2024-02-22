@@ -990,7 +990,7 @@ impl JingleSession {
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     if let Some(participantId) = &source.participant_id {
                       // Match participant_id and update sink_name
-                      if participantId == participant_id {
+                      if *participantId == participant_id {
                         source.sink_name = Some(sink_pad_name.clone());
                       }
                     }
