@@ -979,7 +979,7 @@ impl JingleSession {
                 let mut random_map = handle.block_on(async {
                   // Use handle.block_on to wait for the lock and access remote_ssrc_map
                   let jingle_session_guard = conference.jingle_session.lock().await;
-                  let remote_ssrc_map = &jingle_session_guard
+                  let remote_ssrc_map = &mut jingle_session_guard
                     .as_ref()
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
