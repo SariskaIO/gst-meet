@@ -44,6 +44,7 @@ use xmpp_parsers::{
   BareJid, FullJid, Jid,
 };
 
+use crate::jingle;
 use crate::{
   colibri::ColibriChannel,
   jingle::JingleSession,
@@ -974,25 +975,50 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                       info!("participant left here: {:?}", jid);
-                      info!("participant id: {:?}", jid.resource.clone().to_string());
+                      info!("participant id: {:?}", jid.node.clone().to_string());
+
+                      // find the sink related to the participant id
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                         //jingle_session.pause_all_sinks();
-                        
-                        let sink_1 = "sink_1";
 
-                        let result_element_pad_1 = self
-                                .remote_participant_video_sink_element()
-                                .await
-                                .unwrap()
-                                .static_pad(sink_1);
-                        info!("result_element_pad_1: {:?}", result_element_pad_1);
-                        
-                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                          if let Some(result_element_pad_1) = result_element_pad_1 {
-                            info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                            compositor.release_request_pad(&result_element_pad_1);
-                            compositor.sync_state_with_parent();
+                        if let map = jingle_session.remote_ssrc_map.clone() {
+                          for (key, value) in map {
+                            info!("Key: {:?}", key);
+                            info!("Value: {:?}", value);
                           }
+                        }
+
+                        if let Some(source) = map
+                          .values()
+                          .find(|&source| source.participant_id == jid.node.clone().to_string())
+                        {
+                          // Found the Source with the specified participant_id
+                          if let Some(sink_name) = &source.sink_name {
+                            println!("Found sink_name: {}", sink_name);
+                            let sink_1 = sink_name;
+
+                            let result_element_pad_1 = self
+                              .remote_participant_video_sink_element()
+                              .await
+                              .unwrap()
+                              .static_pad(sink_1);
+                            info!("result_element_pad_1: {:?}", result_element_pad_1);
+
+                            if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                              if let Some(result_element_pad_1) = result_element_pad_1 {
+                                info!("Result Element Pad 1: {:?}", result_element_pad_1);
+                                compositor.release_request_pad(&result_element_pad_1);
+                                compositor.sync_state_with_parent();
+                              }
+                            }
+                          } else {
+                            println!("Found Source, but sink_name is None.");
+                          }
+                        } else {
+                          println!(
+                            "No entry found for participant_id: {:?}",
+                            participant_id_to_find
+                          );
                         }
                       }
 
