@@ -322,6 +322,7 @@ impl JingleSession {
           else {
             MediaType::Video
           },
+          sink_name: None,
         },
       );
     }
@@ -978,6 +979,8 @@ impl JingleSession {
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
                 
+                let sink_pad_name = sink_pad.name().to_string();
+
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
                   Some(&format!(
@@ -986,11 +989,13 @@ impl JingleSession {
                   )),
                   &sink_pad,
                 )?;
+                source.sink_name = Some(sink_pad_name);
 
                 info!("Ghost Pad: {:?}", ghost_pad);
                 info!("participant_id: {:?}", participant_id);
                 info!("source.media_type: {:?}", source.media_type);
                 info!("source.ssrc: {:?}", source.ssrc);
+                info!("sink_pad_name: {:?}", source.sink_name);
 
                 // Get the pad of the bin
                 let bin: Bin = sink_element
@@ -1511,6 +1516,7 @@ impl JingleSession {
               else {
                 MediaType::Video
               },
+              sink_name: None,
             },
           );
         }
