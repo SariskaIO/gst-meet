@@ -470,7 +470,7 @@ impl JingleSession {
     let mut video_hdrext_transport_cc = None;
 
     let mut remote_ssrc_map = HashMap::new();
-    let mut remote_sink_name_by_participant_id = HashMap::new();
+    
 
     for content in &jingle.contents {
       if let Some(Description::Rtp(description)) = &content.description {
@@ -1070,6 +1070,8 @@ impl JingleSession {
       });
     }
 
+
+    let mut remote_sink_name_by_participant_id = HashMap::new();
     let opus = codecs.iter().find(|codec| codec.name == CodecName::Opus);
     let audio_sink_element = if let Some(opus) = opus {
       let audio_sink_element = gstreamer::ElementFactory::make(opus.payloader_name()).build()?;
