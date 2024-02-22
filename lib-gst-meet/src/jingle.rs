@@ -992,11 +992,7 @@ impl JingleSession {
                   // Use the remote_ssrc_map directly without cloning
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     // Modify the source directly
-                    // For example, change the sink_name
                     source.sink_name = Some(sink_pad_name.clone());
-                    // Return the source
-                    Ok::<_, anyhow::Error>(source)
-                    // Continue with other modifications...
                   } else {
                     bail!("unknown ssrc: {}", ssrc);
                   }
