@@ -799,25 +799,7 @@ impl JingleSession {
             })?;
 
             // -------------------------------------------------------------
-            let mut random_map = handle.block_on(async {
-              // Use handle.block_on to wait for the lock and access remote_ssrc_map
-              let jingle_session_guard = conference.jingle_session.lock().await;
-              let remote_ssrc_map = &jingle_session_guard
-                .as_ref()
-                .context("not connected (no jingle session)")?
-                .remote_ssrc_map;
-
-              // Print the remote_ssrc_map before accessing the Source
-              println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-
-              // Use the remote_ssrc_map directly without cloning
-              let source_option = remote_ssrc_map.get(&ssrc);
-
-              match source_option {
-                Some(source) => Ok(source.clone()), // Assuming Source implements Clone
-                None => bail!("unknown ssrc: {}", ssrc),
-              }
-            });
+            
 
             // -------------------------------------------------------------
             info!("pad added for remote source: {:?}", source);
@@ -994,6 +976,29 @@ impl JingleSession {
 
                 let sink_pad_name = sink_pad.name().to_string();
                 // Set the sink name on the source
+
+                let mut random_map = handle.block_on(async {
+                  // Use handle.block_on to wait for the lock and access remote_ssrc_map
+                  let jingle_session_guard = conference.jingle_session.lock().await;
+                  let remote_ssrc_map = &jingle_session_guard
+                    .as_ref()
+                    .context("not connected (no jingle session)")?
+                    .remote_ssrc_map;
+    
+                  // Print the remote_ssrc_map before accessing the Source
+                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+
+                  if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
+                    if let Some(participantId) = &source.participant_id {
+                        // Match participant_id and update sink_name
+                        if participantId == participant_id {
+                            source.sink_name = Some(sink_pad_name.clone());
+                        }
+                    }
+                  }
+                  // Print the remote_ssrc_map after accessing the Source
+                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+                });
 
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
