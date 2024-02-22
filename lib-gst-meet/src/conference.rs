@@ -979,50 +979,20 @@ impl StanzaFilter for JitsiConference {
                       
 
                       // find the sink related to the participant id
-                      // if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                      //   let mut map = jingle_session.remote_sink_name_by_participant_id.clone();
-                      //   info!("remote source map: {:?}", map);
 
-                      //   match map.get(participant_id.as_str()) {
-                      //     Some(sink_name) => {
-                      //         println!("Sink name for participant ID {}: {}", participant_id, sink_name);
-                      //     }
-                      //     None => {
-                      //         println!("Participant ID {} not found in the map.", participant_id);
-                      //     }
-                      // }
-                      //   // if let Some(source) = map
-                      //   //   .values()
-                      //   //   .find(participant_id == Some(participant_id.clone()))
-                      //   // {
-                      //   //   // Found the Source with the specified participant_id
-                      //   //   if let Some(sink_name) = &source.sink_name {
-                      //   //     println!("Found sink_name: {}", sink_name);
-                      //   //     let sink_1 = sink_name;
-
-                      //   //     let result_element_pad_1 = self
-                      //   //       .remote_participant_video_sink_element()
-                      //   //       .await
-                      //   //       .unwrap()
-                      //   //       .static_pad(sink_1.as_str());
-                      //   //     info!("result_element_pad_1: {:?}", result_element_pad_1);
-
-                      //   //     if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                      //   //       if let Some(result_element_pad_1) = result_element_pad_1 {
-                      //   //         info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                      //   //         compositor.release_request_pad(&result_element_pad_1);
-                      //   //         compositor.sync_state_with_parent();
-                      //   //       }
-                      //   //     }
-                      //   //   } else {
-                      //   //     println!("Found Source, but sink_name is None.");
-                      //   //   }
-                      //   // } else {
-                      //   //   println!(
-                      //   //     "No entry found for participant_id"
-                      //   //   );
-                      //   // }
-                      // }
+                      if let Some(jingle_session) = self.jingle_session.lock().await.take(){
+                        let mut map = jingle_session.remote_ssrc_map.clone();
+                        info!("remote source map: {:?}", map);
+                        match map.get(participant_id.as_str()) {
+                          Some(sink_name) => {
+                              println!("SSRC for participant ID {}: {}", participant_id, sink_name);
+                          }
+                          None => {
+                              println!("Participant ID {} not found in the map.", participant_id);
+                          }
+                        }
+                      }
+                      
 
                       // // Simulate the timeout using `tokio::time::sleep`
 
