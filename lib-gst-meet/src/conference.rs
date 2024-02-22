@@ -981,6 +981,7 @@ impl StanzaFilter for JitsiConference {
                       // find the sink related to the participant id
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                         let mut map = jingle_session.remote_ssrc_map.clone();
+                        info!("remote source map: {:?}", map);
                         if let Some(source) = map
                           .values()
                           .find(|&source| source.participant_id == Some(participant_id.clone()))

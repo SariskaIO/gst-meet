@@ -989,7 +989,9 @@ impl JingleSession {
                   )),
                   &sink_pad,
                 )?;
-                source.sink_name = Some(sink_pad_name);
+                
+                self.remote_ssrc_map
+                  .insert(source.ssrc, source.clone());
 
                 info!("Ghost Pad: {:?}", ghost_pad);
                 info!("participant_id: {:?}", participant_id);
