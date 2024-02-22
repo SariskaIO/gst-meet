@@ -975,8 +975,9 @@ impl JingleSession {
                 // Set the sink name on the source
                 &remote_ssrc_map
                   .get_mut(&ssrc)
-                  .context(format!("unknown ssrc: {}", ssrc))?
-                  .sink_name = Some(&sink_pad_name);
+                  .sink_name = Some(&sink_pad_name)
+                  .context(format!("unknown ssrc: {}", ssrc))?;
+                  
 
 
                 // Create a ghost pad for the sink pad and add it to the bin
