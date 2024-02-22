@@ -972,6 +972,13 @@ impl JingleSession {
 
                 let sink_pad_name = sink_pad.name().to_string();
 
+                // Set the sink name on the source
+                &remote_ssrc_map
+                  .get_mut(&ssrc)
+                  .context(format!("unknown ssrc: {}", ssrc))?
+                  .sink_name = Some(sink_pad_name.as_str().clone());
+
+
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
                   Some(&format!(
@@ -983,7 +990,7 @@ impl JingleSession {
 
                 // TODO: set caps on ghost pad
                 source.sink_name = Some(sink_pad_name.clone());
-                remote_ssrc_map.insert(ssrc, source.clone());
+                
 
                 info!("Ghost Pad: {:?}", ghost_pad);
                 info!("participant_id: {:?}", participant_id);
@@ -1469,6 +1476,7 @@ impl JingleSession {
       pipeline_state_null_rx,
     })
   }
+
 
   pub(crate) async fn source_add(&mut self, jingle: Jingle) -> Result<()> {
     for content in &jingle.contents {
