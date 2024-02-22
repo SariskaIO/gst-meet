@@ -453,7 +453,7 @@ impl JingleSession {
     Ok((ice_agent, ice_stream_id, ice_component_id))
   }
 
-  pub(crate) async fn initiate(conference: &JitsiConference, jingle: Jingle) -> Result<Self> {
+  pub(crate) async fn initiate(&mut self, conference: &JitsiConference, jingle: Jingle) -> Result<Self> {
     let initiator = jingle
       .initiator
       .as_ref()
@@ -981,12 +981,9 @@ impl JingleSession {
                   &sink_pad,
                 )?;
 
-
-                if let Some(source) = conference.jingle_session.as_ref().and_then(|s| {
-                  s.remote_ssrc_map.get_mut(&ssrc)
-                }) {
-                  source.sink_name = Some(sink_pad_name);
-                }
+                // TODO: set caps on ghost pad
+                source.sink_name = Some(sink_pad_name.clone());
+                self.remote_ssrc_map.insert(ssrc, source.clone());
 
                 info!("Ghost Pad: {:?}", ghost_pad);
                 info!("participant_id: {:?}", participant_id);
