@@ -788,7 +788,7 @@ impl JingleSession {
             let mut parts = pad_name.split('_').skip(4);
             let ssrc: u32 = parts.next().context("malformed pad name")?.parse()?;
             let pt: u8 = parts.next().context("malformed pad name")?.parse()?;
-            let source = handle.block_on(async {
+            let mut source = handle.block_on(async {
               Ok::<_, anyhow::Error>(
                 conference
                   .jingle_session
