@@ -799,15 +799,25 @@ impl JingleSession {
             })?;
 
             // -------------------------------------------------------------
-            let jingle_session_guard = conference.jingle_session.lock().await;
+            let mut random_map = handle.block_on(async {
+              // Use handle.block_on to wait for the lock and access remote_ssrc_map
+              let jingle_session_guard = conference.jingle_session.lock().await;
+              let remote_ssrc_map = &jingle_session_guard
+                .as_ref()
+                .context("not connected (no jingle session)")?
+                .remote_ssrc_map;
 
-            // Access remote_ssrc_map through the MutexGuard
-            let remote_ssrc_map = &jingle_session_guard
-              .as_ref()
-              .context("not connected (no jingle session)")?
-              .remote_ssrc_map;
+              // Print the remote_ssrc_map before accessing the Source
+              println!("remote_ssrc_map: {:?}", remote_ssrc_map);
 
-            println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+              // Use the remote_ssrc_map directly without cloning
+              let source_option = remote_ssrc_map.get(&ssrc);
+
+              match source_option {
+                Some(source) => Ok(source.clone()), // Assuming Source implements Clone
+                None => bail!("unknown ssrc: {}", ssrc),
+              }
+            });
 
             // -------------------------------------------------------------
             info!("pad added for remote source: {:?}", source);
