@@ -149,7 +149,7 @@ pub(crate) struct JingleSession {
   audio_sink_element: gstreamer::Element,
   video_sink_element: gstreamer::Element,
   pub(crate) remote_ssrc_map: HashMap<u32, Source>,
-  pub(crate) remote_sink_name_by_participant_id: HashMap<String, String>,
+  pub(crate) remote_sink_name_by_participant_id: Arc<Mutex<HashMap<String, String>>>,
   _ice_agent: nice::Agent,
   pub(crate) accept_iq_id: Option<String>,
   pub(crate) colibri_url: Option<String>,
@@ -468,9 +468,8 @@ impl JingleSession {
     let mut audio_hdrext_ssrc_audio_level = None;
     let mut audio_hdrext_transport_cc = None;
     let mut video_hdrext_transport_cc = None;
-
     let mut remote_ssrc_map = HashMap::new();
-    
+    let remote_sink_name_by_participant_id = Arc::new(Mutex::new(HashMap::new()));
 
     for content in &jingle.contents {
       if let Some(Description::Rtp(description)) = &content.description {
@@ -777,6 +776,7 @@ impl JingleSession {
       let codecs = codecs.clone();
       rtpbin.connect("pad-added", false, move |values| {
         let rtpbin = &rtpbin_;
+        let remote_sink_name_by_participant_id = remote_sink_name_by_participant_id.clone();
         let f = || {
           debug!("rtpbin pad-added {:?}", values);
           let pad: gstreamer::Pad = values[1].get()?;
@@ -973,9 +973,10 @@ impl JingleSession {
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
 
                 let sink_pad_name = sink_pad.name().to_string();
-
+                let mut map = remote_sink_name_by_participant_id.lock().unwrap();
+                map.insert(participant_id.clone(), sink_pad_name.clone());
                 // Set the sink name on the source
-                remote_sink_name_by_participant_id.insert(participant_id, sink_pad_name.clone());
+                
 
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
@@ -1071,7 +1072,7 @@ impl JingleSession {
     }
 
 
-    let mut remote_sink_name_by_participant_id = HashMap::new();
+    
     let opus = codecs.iter().find(|codec| codec.name == CodecName::Opus);
     let audio_sink_element = if let Some(opus) = opus {
       let audio_sink_element = gstreamer::ElementFactory::make(opus.payloader_name()).build()?;
