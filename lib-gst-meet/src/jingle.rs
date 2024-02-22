@@ -23,6 +23,7 @@ use pem::Pem;
 use rand::random;
 use rcgen::{Certificate, CertificateParams, PKCS_ECDSA_P256_SHA256};
 use ring::digest::{digest, SHA256};
+use std::sync::{Arc, Mutex};
 use tokio::{net::lookup_host, runtime::Handle, sync::oneshot, task::JoinHandle};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
@@ -39,8 +40,6 @@ use xmpp_parsers::{
   jingle_ssma::Semantics,
   Jid,
 };
-use std::sync::{Arc, Mutex};
-
 
 use crate::{
   colibri::ColibriChannel,
@@ -151,7 +150,6 @@ pub(crate) struct JingleSession {
   audio_sink_element: gstreamer::Element,
   video_sink_element: gstreamer::Element,
   pub(crate) remote_ssrc_map: HashMap<u32, Source>,
-  pub(crate) remote_sink_name_by_participant_id: Arc<Mutex<HashMap<String, String>>>,
   _ice_agent: nice::Agent,
   pub(crate) accept_iq_id: Option<String>,
   pub(crate) colibri_url: Option<String>,
@@ -471,7 +469,6 @@ impl JingleSession {
     let mut audio_hdrext_transport_cc = None;
     let mut video_hdrext_transport_cc = None;
     let mut remote_ssrc_map = HashMap::new();
-    let remote_sink_name_by_participant_id = Arc::new(Mutex::new(HashMap::new()));
 
     for content in &jingle.contents {
       if let Some(Description::Rtp(description)) = &content.description {
@@ -778,7 +775,6 @@ impl JingleSession {
       let codecs = codecs.clone();
       rtpbin.connect("pad-added", false, move |values| {
         let rtpbin = &rtpbin_;
-        let remote_sink_name_by_participant_id = remote_sink_name_by_participant_id.clone();
         let f = || {
           debug!("rtpbin pad-added {:?}", values);
           let pad: gstreamer::Pad = values[1].get()?;
@@ -802,6 +798,18 @@ impl JingleSession {
               )
             })?;
 
+            // -------------------------------------------------------------
+            let jingle_session_guard = conference.jingle_session.lock().await;
+
+            // Access remote_ssrc_map through the MutexGuard
+            let remote_ssrc_map = &jingle_session_guard
+              .as_ref()
+              .context("not connected (no jingle session)")?
+              .remote_ssrc_map;
+
+            println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+
+            // -------------------------------------------------------------
             info!("pad added for remote source: {:?}", source);
 
             let depayloader = match source.media_type {
@@ -975,10 +983,7 @@ impl JingleSession {
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
 
                 let sink_pad_name = sink_pad.name().to_string();
-                let mut map = remote_sink_name_by_participant_id.lock().unwrap();
-                map.insert(participant_id.clone(), sink_pad_name.clone());
                 // Set the sink name on the source
-                
 
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
@@ -1073,8 +1078,6 @@ impl JingleSession {
       });
     }
 
-
-    
     let opus = codecs.iter().find(|codec| codec.name == CodecName::Opus);
     let audio_sink_element = if let Some(opus) = opus {
       let audio_sink_element = gstreamer::ElementFactory::make(opus.payloader_name()).build()?;
@@ -1470,7 +1473,6 @@ impl JingleSession {
       audio_sink_element,
       video_sink_element,
       remote_ssrc_map,
-      remote_sink_name_by_participant_id,
       _ice_agent: ice_agent,
       accept_iq_id: Some(accept_iq_id),
       colibri_url: ice_transport.web_socket.clone().map(|ws| ws.url),
