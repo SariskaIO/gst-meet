@@ -983,6 +983,7 @@ impl StanzaFilter for JitsiConference {
                         let mut map = jingle_session.remote_ssrc_map.clone();
                         info!("remote source map: {:?}", map);
 
+                        let mut sink_pad_name = "sink_1";
 
                         for source in map.values().filter(|source| {
                           if let Some(participant_id) = &source.participant_id {
@@ -997,6 +998,22 @@ impl StanzaFilter for JitsiConference {
                               "sink_name for participant {}: {:?}",
                               participantId, sink_name
                             );
+                            sink_pad_name = sink_name;
+                          }
+                        }
+
+                        let result_element_pad_1 = self
+                                .remote_participant_video_sink_element()
+                                .await
+                                .unwrap()
+                                .static_pad(sink_pad_name);
+                        info!("result_element_pad_1: {:?}", result_element_pad_1);
+
+                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                          if let Some(result_element_pad_1) = result_element_pad_1 {
+                            info!("Result Element Pad 1: {:?}", result_element_pad_1);
+                            compositor.release_request_pad(&result_element_pad_1);
+                            compositor.sync_state_with_parent();
                           }
                         }
                       }
