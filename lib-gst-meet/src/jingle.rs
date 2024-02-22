@@ -999,7 +999,7 @@ impl JingleSession {
 
                   println!("remote_ssrc_map: {:?}", remote_ssrc_map);
                   // Return the remote_ssrc_map
-                  Ok::<_, anyhow::Error>(remote_ssrc_map)
+                  Ok::<_, anyhow::Error>(remote_ssrc_map.clone())
                 });
 
                 // Create a ghost pad for the sink pad and add it to the bin
