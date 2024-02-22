@@ -39,6 +39,8 @@ use xmpp_parsers::{
   jingle_ssma::Semantics,
   Jid,
 };
+use std::sync::{Arc, Mutex};
+
 
 use crate::{
   colibri::ColibriChannel,
