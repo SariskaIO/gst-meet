@@ -983,7 +983,7 @@ impl StanzaFilter for JitsiConference {
                         let mut map = jingle_session.remote_ssrc_map.clone();
                         if let Some(source) = map
                           .values()
-                          .find(|&source| source.participant_id == Some(participant_id.clone())
+                          .find(|&source| source.participant_id == Some(participant_id.clone()))
                         {
                           // Found the Source with the specified participant_id
                           if let Some(sink_name) = &source.sink_name {
