@@ -982,7 +982,7 @@ impl JingleSession {
 
                   // Use a mutable reference to directly access remote_ssrc_map
                   let remote_ssrc_map = &mut jingle_session_guard
-                    .as_deref_mut()
+                    .as_mut()
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
 
