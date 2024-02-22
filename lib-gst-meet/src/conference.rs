@@ -975,24 +975,31 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                       info!("participant left here: {:?}", jid);
-                      let participant_id = jid.node.clone().unwrap_or_default().to_string();
-                      
+                      let participant = jid.node.clone().unwrap_or_default().to_string();
 
                       // find the sink related to the participant id
 
-                      if let Some(jingle_session) = self.jingle_session.lock().await.take(){
+                      if let Some(jingle_session) = self.jingle_session.lock().await.take() {
                         let mut map = jingle_session.remote_ssrc_map.clone();
                         info!("remote source map: {:?}", map);
-                        match map.get(participant_id.as_str()) {
-                          Some(sink_name) => {
-                              println!("SSRC for participant ID {}: {}", participant_id, sink_name);
+
+
+                        for source in map.values().filter(|source| {
+                          if let Some(participant_id) = &source.participant_id {
+                            *participant_id == participant
+                          } else {
+                            println!("participant_id is None");
+                            false
                           }
-                          None => {
-                              println!("Participant ID {} not found in the map.", participant_id);
+                        }) {
+                          if let Some(sink_name) = &source.sink_name {
+                            println!(
+                              "sink_name for participant {}: {:?}",
+                              participant, sink_name
+                            );
                           }
                         }
                       }
-                      
 
                       // // Simulate the timeout using `tokio::time::sleep`
 
