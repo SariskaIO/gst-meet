@@ -981,7 +981,8 @@ impl JingleSession {
                   &sink_pad,
                 )?;
 
-                if let Some(source) = conference.jingle_session.lock().await.as_ref().and_then(|s| {
+
+                if let Some(source) = conference.jingle_session.as_ref().and_then(|s| {
                   s.remote_ssrc_map.get_mut(&ssrc)
                 }) {
                   source.sink_name = Some(sink_pad_name);
