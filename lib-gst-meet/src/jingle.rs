@@ -973,12 +973,12 @@ impl JingleSession {
                 let sink_pad_name = sink_pad.name().to_string();
 
                 // Set the sink name on the source
-                &remote_ssrc_map
-                  .get_mut(&ssrc)
-                  .sink_name = Some(&sink_pad_name)
-                  .context(format!("unknown ssrc: {}", ssrc))?;
-                  
-
+                if let Some(entry) = &mut remote_ssrc_map.get_mut(&ssrc) {
+                  entry.sink_name = Some(sink_pad_name);
+                } else {
+                  // Handle the case where the key does not exist
+                  println!("Entry not found for ssrc: {}", ssrc);
+                }
 
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
@@ -991,7 +991,6 @@ impl JingleSession {
 
                 // TODO: set caps on ghost pad
                 source.sink_name = Some(sink_pad_name.clone());
-                
 
                 info!("Ghost Pad: {:?}", ghost_pad);
                 info!("participant_id: {:?}", participant_id);
@@ -1477,7 +1476,6 @@ impl JingleSession {
       pipeline_state_null_rx,
     })
   }
-
 
   pub(crate) async fn source_add(&mut self, jingle: Jingle) -> Result<()> {
     for content in &jingle.contents {
