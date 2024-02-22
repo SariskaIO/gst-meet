@@ -149,6 +149,7 @@ pub(crate) struct JingleSession {
   audio_sink_element: gstreamer::Element,
   video_sink_element: gstreamer::Element,
   pub(crate) remote_ssrc_map: HashMap<u32, Source>,
+  pub(crate) remote_sink_name_by_participant_id: HashMap<String, String>,
   _ice_agent: nice::Agent,
   pub(crate) accept_iq_id: Option<String>,
   pub(crate) colibri_url: Option<String>,
@@ -469,6 +470,7 @@ impl JingleSession {
     let mut video_hdrext_transport_cc = None;
 
     let mut remote_ssrc_map = HashMap::new();
+    let mut remote_sink_name_by_participant_id = HashMap::new();
 
     for content in &jingle.contents {
       if let Some(Description::Rtp(description)) = &content.description {
@@ -973,12 +975,7 @@ impl JingleSession {
                 let sink_pad_name = sink_pad.name().to_string();
 
                 // Set the sink name on the source
-                if let Some(entry) = &mut remote_ssrc_map.get_mut(&ssrc) {
-                  entry.sink_name = Some(sink_pad_name);
-                } else {
-                  // Handle the case where the key does not exist
-                  println!("Entry not found for ssrc: {}", ssrc);
-                }
+                remote_sink_name_by_participant_id.insert(participant_id, sink_pad_name.clone());
 
                 // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
@@ -1468,6 +1465,7 @@ impl JingleSession {
       audio_sink_element,
       video_sink_element,
       remote_ssrc_map,
+      remote_sink_name_by_participant_id,
       _ice_agent: ice_agent,
       accept_iq_id: Some(accept_iq_id),
       colibri_url: ice_transport.web_socket.clone().map(|ws| ws.url),
