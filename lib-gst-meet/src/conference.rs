@@ -1016,8 +1016,7 @@ impl StanzaFilter for JitsiConference {
                           }
                         } else {
                           println!(
-                            "No entry found for participant_id: {:?}",
-                            participant_id_to_find
+                            "No entry found for participant_id"
                           );
                         }
                       }
