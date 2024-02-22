@@ -975,17 +975,15 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                       info!("participant left here: {:?}", jid);
-                      info!("participant id: {:?}", jid.node.clone().unwrap_or_default().to_string());
+                      let participant_id = jid.node.clone().unwrap_or_default().to_string();
+                      
 
                       // find the sink related to the participant id
                       if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                        //jingle_session.pause_all_sinks();
-
                         let mut map = jingle_session.remote_ssrc_map.clone();
-                        
                         if let Some(source) = map
                           .values()
-                          .find(|&source| source.participant_id == jid.node.clone().unwrap_or_default().to_string())
+                          .find(|&source| source.participant_id == Some(participant_id))
                         {
                           // Found the Source with the specified participant_id
                           if let Some(sink_name) = &source.sink_name {
@@ -996,7 +994,7 @@ impl StanzaFilter for JitsiConference {
                               .remote_participant_video_sink_element()
                               .await
                               .unwrap()
-                              .static_pad(sink_1);
+                              .static_pad(sink_1.as_str());
                             info!("result_element_pad_1: {:?}", result_element_pad_1);
 
                             if let Some(compositor) = jingle_session.pipeline().by_name("video") {
