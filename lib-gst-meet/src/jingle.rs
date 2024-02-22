@@ -799,7 +799,6 @@ impl JingleSession {
             })?;
 
             // -------------------------------------------------------------
-            
 
             // -------------------------------------------------------------
             info!("pad added for remote source: {:?}", source);
@@ -984,20 +983,27 @@ impl JingleSession {
                     .as_ref()
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
-    
+
                   // Print the remote_ssrc_map before accessing the Source
                   println!("remote_ssrc_map: {:?}", remote_ssrc_map);
 
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     if let Some(participantId) = &source.participant_id {
-                        // Match participant_id and update sink_name
-                        if participantId == participant_id {
-                            source.sink_name = Some(sink_pad_name.clone());
-                        }
+                      // Match participant_id and update sink_name
+                      if participantId == participant_id {
+                        source.sink_name = Some(sink_pad_name.clone());
+                      }
                     }
                   }
                   // Print the remote_ssrc_map after accessing the Source
                   println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+
+                  let source_option = remote_ssrc_map.get(&ssrc);
+
+                  match source_option {
+                    Some(source) => Ok(source.clone()), // Assuming Source implements Clone
+                    None => bail!("unknown ssrc: {}", ssrc),
+                  }
                 });
 
                 // Create a ghost pad for the sink pad and add it to the bin
