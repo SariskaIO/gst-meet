@@ -709,7 +709,7 @@ impl StanzaFilter for JitsiConference {
                           if let (Some(remote_ssrc_map), Some(source_stats)) =
                             (maybe_remote_ssrc_map, maybe_source_stats)
                           {
-                            debug!("source stats: {:#?}", source_stats);
+                            info!("source stats: {:#?}", source_stats);
 
                             let audio_recv_bitrate: u64 = source_stats
                               .iter()
@@ -1015,6 +1015,7 @@ impl StanzaFilter for JitsiConference {
                             jingle_session.pipeline().set_state(gstreamer::State::Paused);
                             compositor.release_request_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
+                            jingle_session.pipeline().remove(&result_element_pad_1);
                             jingle_session.pipeline().set_state(gstreamer::State::Playing);
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }

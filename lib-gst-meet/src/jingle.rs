@@ -1299,7 +1299,7 @@ impl JingleSession {
           gstreamer::MessageView::StateChanged(state)
             if state.current() == gstreamer::State::Null =>
           {
-            debug!("pipeline state is null");
+            info!("pipeline state is null");
             pipeline_state_null_tx.send(()).unwrap();
             break;
           },
