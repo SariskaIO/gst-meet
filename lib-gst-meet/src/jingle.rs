@@ -1300,7 +1300,15 @@ impl JingleSession {
             if state.current() == gstreamer::State::Null =>
           {
             info!("pipeline state is null");
-            pipeline_state_null_tx.send(()).unwrap();
+            match pipeline_state_null_tx.send(()) {
+              Ok(_) => {
+                // Successfully sent the message
+              },
+              Err(err) => {
+                error!("Error sending message: {:?}", err);
+                // Handle the error case appropriately
+              },
+            }
             break;
           },
           _ => {},
