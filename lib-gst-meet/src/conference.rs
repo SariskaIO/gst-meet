@@ -1007,10 +1007,10 @@ impl StanzaFilter for JitsiConference {
                           .static_pad(sink_pad_name);
                         info!("result_element_pad_1: {:?}", result_element_pad_1);
 
-                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                        if let Some(compositor) = &jingle_session.pipeline().by_name("video") {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                            if let Err(err) = jingle_session
+                            if let Err(err) =  &jingle_session
                               .pipeline()
                               .set_state(gstreamer::State::Paused)
                             {
@@ -1018,7 +1018,7 @@ impl StanzaFilter for JitsiConference {
                             }
                             compositor.release_request_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
-                            if let Err(err) = jingle_session
+                            if let Err(err) = &jingle_session
                               .pipeline()
                               .set_state(gstreamer::State::Playing)
                             {

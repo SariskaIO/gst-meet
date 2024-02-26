@@ -798,9 +798,6 @@ impl JingleSession {
               )
             })?;
 
-            // -------------------------------------------------------------
-
-            // -------------------------------------------------------------
             info!("pad added for remote source: {:?}", source);
 
             let depayloader = match source.media_type {
@@ -1518,7 +1515,7 @@ impl JingleSession {
             .owner
             .clone();
 
-          debug!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
+          info!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
           self.remote_ssrc_map.insert(
             ssrc.id,
             Source {
