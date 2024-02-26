@@ -1015,6 +1015,8 @@ impl StanzaFilter for JitsiConference {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
                         }
+
+                        info!("jingle map: {:?}", jingle_session.remote_ssrc_map.clone());
                       }
 
                       fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {

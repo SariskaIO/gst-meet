@@ -645,8 +645,11 @@ impl JingleSession {
       let jingle_session = jingle_session.clone();
       let f = move || {
         let rtpjitterbuffer: gstreamer::Element = values[1].get()?;
+        info!("rtp JitterBuffer {:?}", rtpjitterbuffer);
         let session: u32 = values[2].get()?;
+        info!("rtp session {:?}", session);
         let ssrc: u32 = values[3].get()?;
+        info!("rtp ssrc {:?}", ssrc);
         debug!(
           "new jitterbuffer created for session {} ssrc {}",
           session, ssrc
@@ -991,7 +994,7 @@ impl JingleSession {
                     // Modify the source directly
                     source.sink_name = Some(sink_pad_name.clone());
                   } else {
-                    bail!("unknown ssrc ss: {}", ssrc);
+                    bail!("unknown ssrc: {}", ssrc);
                   }
 
                   println!("remote_ssrc_map: {:?}", remote_ssrc_map);
