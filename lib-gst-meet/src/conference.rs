@@ -977,62 +977,11 @@ impl StanzaFilter for JitsiConference {
                       info!("participant left here: {:?}", jid);
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
 
-                      // find the sink related to the participant id
-
-                      // if let Some(jingle_session) = self.jingle_session.lock().await.take() {
-                      //   let mut map = jingle_session.remote_ssrc_map.clone();
-                      //   info!("remote source map: {:?}", map);
-
-                      //   let mut sink_pad_name = "sink_1";
-
-                      //   for source in map.values().filter(|source| {
-                      //     if let Some(participant_id) = &source.participant_id {
-                      //       *participant_id == participantId
-                      //     } else {
-                      //       println!("participant_id is None");
-                      //       false
-                      //     }
-                      //   }) {
-                      //     if let Some(sink_name) = &source.sink_name {
-                      //       println!(
-                      //         "sink_name for participant {}: {:?}",
-                      //         participantId, sink_name
-                      //       );
-                      //       sink_pad_name = sink_name;
-                      //     }
-                      //   }
-
-                      //   let result_element_pad_1 = self
-                      //           .remote_participant_video_sink_element()
-                      //           .await
-                      //           .unwrap()
-                      //           .static_pad(sink_pad_name);
-                      //   info!("result_element_pad_1: {:?}", result_element_pad_1);
-
-                      //   if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                      //     if let Some(result_element_pad_1) = result_element_pad_1 {
-                      //       info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                      //       if let Err(err) = jingle_session.pipeline().set_state(gstreamer::State::Paused) {
-                      //         error!("Error setting pipeline state to Paused: {:?}", err);
-                      //       }
-                      //       compositor.release_request_pad(&result_element_pad_1);
-                      //       compositor.sync_state_with_parent();
-                      //       if let Err(err) = jingle_session.pipeline().set_state(gstreamer::State::Playing) {
-                      //         error!("Error setting pipeline state to Playing: {:?}", err);
-                      //       }
-
-                      //       info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                      //     }
-                      //   }
-                      // }
-
-                      // // // Simulate the timeout using `tokio::time::sleep`
-
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
                         let mut map = jingle_session.remote_ssrc_map.clone();
                         info!("remote source map: {:?}", map);
 
-                        let mut sink_pad_name = "sink_1";
+                        let mut sink_pad_name = "sdads";
 
                         for source in map.values().filter(|source| {
                           if let Some(participant_id) = &source.participant_id {
@@ -1075,7 +1024,6 @@ impl StanzaFilter for JitsiConference {
                             {
                               error!("Error setting pipeline state to Playing: {:?}", err);
                             }
-
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
                         }
@@ -1146,8 +1094,6 @@ impl StanzaFilter for JitsiConference {
 
                       // Call the on_participant_left function  // for some reason this is not working
                       info!("participant left: {:?}", jid);
-
-                      // Write code to call jingle_session.stop() here
 
                       if let Some(f) = &self
                         .inner
