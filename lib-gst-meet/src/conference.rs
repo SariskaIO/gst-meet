@@ -1007,23 +1007,11 @@ impl StanzaFilter for JitsiConference {
                           .static_pad(sink_pad_name);
                         info!("result_element_pad_1: {:?}", result_element_pad_1);
 
-                        if let Some(compositor) = &jingle_session.pipeline().by_name("video") {
+                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
-                            if let Err(err) =  &jingle_session
-                              .pipeline()
-                              .set_state(gstreamer::State::Paused)
-                            {
-                              error!("Error setting pipeline state to Paused: {:?}", err);
-                            }
                             compositor.release_request_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
-                            if let Err(err) = &jingle_session
-                              .pipeline()
-                              .set_state(gstreamer::State::Playing)
-                            {
-                              error!("Error setting pipeline state to Playing: {:?}", err);
-                            }
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
                         }
@@ -1120,7 +1108,7 @@ impl StanzaFilter for JitsiConference {
                       .insert(from.resource.clone(), participant.clone())
                       .is_none()
                     {
-                      debug!("new participant: {:?}", jid);
+                      info!("new participant: {:?}", jid);
                       if let Some(f) = &self.inner.lock().await.on_participant.as_ref().cloned() {
                         debug!("calling on_participant with new participant");
                         if let Err(e) = f(self.clone(), participant.clone()).await {
