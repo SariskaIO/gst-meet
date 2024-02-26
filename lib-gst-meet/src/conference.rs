@@ -279,13 +279,6 @@ impl JitsiConference {
     Ok(())
   }
 
-  // pub async fn leaving(self) -> Result<()>{
-  //   if let Some(jingle_session) = self.jingle_session.lock().await.take(){
-  //     let Some(pipeline) = jingle_session.pipeline();
-  //     pipeline.set_state(gstreamer::State::Null);
-  //   }
-  // }
-
   fn endpoint_id(&self) -> Result<&str> {
     self
       .jid
@@ -1016,8 +1009,13 @@ impl StanzaFilter for JitsiConference {
                           }
                         }
 
+                        
+                      }
+
+                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
                         info!("jingle map: {:?}", jingle_session.remote_ssrc_map.clone());
                       }
+                      
 
                       fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                         let mut real_participant_count = 0;

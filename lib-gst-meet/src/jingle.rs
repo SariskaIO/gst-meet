@@ -1518,7 +1518,7 @@ impl JingleSession {
             .owner
             .clone();
 
-          info!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
+          info!("adding ssrc to remote_ssrc_map 2: {:?}", ssrc);
           self.remote_ssrc_map.insert(
             ssrc.id,
             Source {
