@@ -216,7 +216,7 @@ async fn main_inner() -> Result<()> {
     .transpose()
     .context("failed to parse send pipeline")?;
 
-    // Basically parses the cli command into a gstreamer bin
+    // Basically parses the cli command into a gstreamer pipeline(bin)
   let recv_pipeline = opt
     .recv_pipeline
     .as_ref()
@@ -338,6 +338,7 @@ async fn main_inner() -> Result<()> {
 
   let main_loop = glib::MainLoop::new(None, false);
 
+  // Create a conference, create jingle session, join conference and return conference
   let conference = JitsiConference::join(connection, main_loop.context(), config)
     .await
     .context("failed to join conference")?;
@@ -346,6 +347,7 @@ async fn main_inner() -> Result<()> {
     .set_send_resolution(send_video_height.into())
     .await;
 
+  
   conference
     .send_colibri_message(ColibriMessage::ReceiverVideoConstraints {
       last_n: Some(opt.last_n.map(i32::from).unwrap_or(-1)),
@@ -376,6 +378,7 @@ async fn main_inner() -> Result<()> {
   if let Some(bin) = send_pipeline {
     conference.add_bin(&bin).await?;
 
+    // Link audio compositor to audio sink element
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
       let audio_sink = conference.audio_sink_element().await?;
@@ -384,6 +387,7 @@ async fn main_inner() -> Result<()> {
       conference.set_muted(MediaType::Audio, true).await?;
     }
 
+    // Link video compositor to video sink element
     if let Some(video) = bin.by_name("video") {
       info!("Found video element in pipeline, linking...");
       let video_sink = conference.video_sink_element().await?;
@@ -397,8 +401,14 @@ async fn main_inner() -> Result<()> {
   }
 
   if let Some(bin) = recv_pipeline {
+    // Add pipeline (bin) to the pipeline
+    // A bin is simply an Element which can contain other elements inside it. In our case a pipeline 
+    // consists of multiple elements such as a source, sink, their respective pads and compositor etc. 
+
+    // Only this matters for sariska use case
     conference.add_bin(&bin).await?;
 
+    // Takes the audio compositor and attached to the conference
     if let Some(audio_element) = bin.by_name("audio") {
       info!(
         "recv pipeline has an audio element, a sink pad will be requested from it for each participant"
@@ -408,6 +418,8 @@ async fn main_inner() -> Result<()> {
         .await;
     }
 
+    // Takes te video compositor and attach to the conference
+    // This video compositor will have multiple sinks in which the actual videos of the participants will play
     if let Some(video_element) = bin.by_name("video") {
       info!(
         "recv pipeline has a video element, a sink pad will be requested from it for each participant"
@@ -418,6 +430,7 @@ async fn main_inner() -> Result<()> {
     }
   }
 
+  // Does not apply to sariska
   conference
     .on_participant(move |conference, participant| {
       let recv_pipeline_participant_template = recv_pipeline_participant_template.clone();
@@ -509,39 +522,6 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-  // fn adjust_compositor_layout(compositor: E, active_participants: usize) {
-  //   let mut xpos = 0;
-  //   let mut ypos = 0;
-  //   let layout_width = 1280; // Total width of the compositor output
-  //   let layout_height = 720; // Total height of the compositor output
-
-  //   // Determine the size of each video based on the number of active participants
-  //   let video_width = layout_width / active_participants.max(1); // Prevent division by zero
-  //   let video_height = layout_height; // For simplicity, using full height for each stream
-
-  //   // Iterate over each sink pad to adjust the layout
-  //   for i in 0..active_participants {
-  //     if let Some(sink_pad) = compositor.static_pad(&format!("sink_{}", i)) {
-  //       // Calculate position for the current stream
-  //       xpos = i * video_width;
-
-  //       // Set properties on the sink pad to adjust the stream's position and size
-  //       sink_pad
-  //         .set_property("xpos", &xpos)
-  //         .expect("Failed to set xpos");
-  //       sink_pad
-  //         .set_property("ypos", &ypos)
-  //         .expect("Failed to set ypos");
-  //       sink_pad
-  //         .set_property("width", &video_width)
-  //         .expect("Failed to set width");
-  //       sink_pad
-  //         .set_property("height", &video_height)
-  //         .expect("Failed to set height");
-  //     }
-  //   }
-  // }
-
   conference
     .on_colibri_message(move |_conference, message| {
       Box::pin(async move {
@@ -551,12 +531,16 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
+    // Set the pipeline to play state to start flow of media stream
   conference
     .set_pipeline_state(gstreamer::State::Playing)
     .await?;
 
+  
   let conference_ = conference.clone();
   let main_loop_ = main_loop.clone();
+  
+  // gracefully shut down a leave conference if ctrl_c is called
   tokio::spawn(async move {
     ctrl_c().await.unwrap();
 

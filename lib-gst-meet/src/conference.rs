@@ -223,6 +223,8 @@ impl JitsiConference {
         .map(|feature| feature.into()),
     );
 
+    // here is where a new jingle session is crearted along with other stuff
+    // While the conference is created after a connection is made
     let conference = Self {
       glib_main_context,
       jid: xmpp_connection
@@ -412,6 +414,8 @@ impl JitsiConference {
     self.inner.lock().await.send_resolution = Some(height);
   }
 
+
+  // Send messages through jingle session
   pub async fn send_colibri_message(&self, message: ColibriMessage) -> Result<()> {
     self
       .jingle_session
@@ -471,6 +475,8 @@ impl JitsiConference {
     Ok(())
   }
 
+
+  // Called whenever a new participant joins, including the very first one
   #[tracing::instrument(level = "trace", skip(f))]
   pub async fn on_participant(
     &self,
@@ -484,7 +490,7 @@ impl JitsiConference {
       locked_inner.participants.values().cloned().collect()
     };
     for participant in existing_participants {
-      debug!(
+      info!(
         "calling on_participant with existing participant: {:?}",
         participant
       );
@@ -1008,8 +1014,6 @@ impl StanzaFilter for JitsiConference {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
                         }
-
-                        
                       }
 
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {

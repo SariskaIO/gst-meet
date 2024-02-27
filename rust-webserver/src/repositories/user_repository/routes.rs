@@ -424,23 +424,7 @@ pub async fn start_recording(
             params.room_name,
             location
         );        
-    // } else if is_low_latency && multi_bitrate {
-    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-    //     location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
-    //     if codec == "H265" {
-    //         location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
-    //     }        
-    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-    //     --xmpp-domain={}  --muc-domain={} \
-    //     --recv-video-scale-width=1280 \
-    //     --recv-video-scale-height=720 \
-    //     --room-name={} \
-    //     --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
-    //        ! x264enc \
-    //        ! video/x-h264,profile=high \
-    //        ! flvmux streamable=true name=mux \
-    //        ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
-    } else if multi_bitrate {
+       } else if multi_bitrate {
         set_var("PROFILE", "HD");
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"transcode".to_string(), encoded);
@@ -491,6 +475,7 @@ pub async fn start_recording(
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }
 
+    // 
     let child = Command::new("sh")
     .arg("-c")
     .arg(gstreamer_pipeline)

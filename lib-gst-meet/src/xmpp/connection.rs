@@ -382,6 +382,7 @@ impl Connection {
         Idle => {
           for filter in &locked_inner.stanza_filters {
             if filter.filter(&element) {
+              info!("Taking a take here {:?}", element);
               filter.take(element).await?;
               break;
             }
