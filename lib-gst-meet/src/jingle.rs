@@ -973,10 +973,10 @@ impl JingleSession {
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
 
-                sink_pad.set_property("width", 320)?;
-                sink_pad.set_property("height", 480)?;
-                sink_pad.set_property("xpos", 0)?;
-                sink_pad.set_property("ypos", 0)?;
+                sink_pad.set_property("width", 320);
+                sink_pad.set_property("height", 480);
+                sink_pad.set_property("xpos", 0);
+                sink_pad.set_property("ypos", 0);
 
                 let sink_pad_name = sink_pad.name().to_string();
                 // Set the sink name on the source
