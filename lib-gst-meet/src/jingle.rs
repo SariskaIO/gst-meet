@@ -972,10 +972,11 @@ impl JingleSession {
                 let sink_pad = sink_element
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
+                
 
                 let sink_pad_name = sink_pad.name().to_string();
                 // Set the sink name on the source
-
+                
                 let mut random_map = handle.block_on(async {
                   // Use handle.block_on to wait for the lock and access remote_ssrc_map
                   let mut jingle_session_guard = conference.jingle_session.lock().await;

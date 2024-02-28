@@ -455,7 +455,7 @@ pub async fn start_recording(
         --recv-video-scale-width=640 \
         --recv-video-scale-height=360 \
         --room-name={} \
-        --recv-pipeline='compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
+        --recv-pipeline='compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
@@ -475,7 +475,7 @@ pub async fn start_recording(
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }
 
-    // 
+    //
     let child = Command::new("sh")
     .arg("-c")
     .arg(gstreamer_pipeline)
