@@ -1034,11 +1034,11 @@ impl StanzaFilter for JitsiConference {
                         .cloned()
                         .collect();
 
-                      let num = 0;
+                      let mut num = 0;
                       for element in filtered_vector {
                         let some = element.name().to_string();
                         info!("Element: {:?}", some);
-                        let num_cols = 2;
+                        
                         let row = num / 2;
                         let col = num % 2;
                         let xpos = col as i32 * 1280; // Assuming width is 1280
