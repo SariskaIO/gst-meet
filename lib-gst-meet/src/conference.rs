@@ -1006,10 +1006,14 @@ impl StanzaFilter for JitsiConference {
                           .static_pad(sink_pad_name);
                         info!("result_element_pad_1: {:?}", result_element_pad_1);
 
+                        let number_of_participants = self.inner.lock().await.participants.len();
+                        info!("Number of participants: {:?}", number_of_participants);
+
                         if let Some(compositor) = jingle_session.pipeline().by_name("video") {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                             compositor.release_request_pad(&result_element_pad_1);
+                            compositor.remove_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
@@ -1020,10 +1024,9 @@ impl StanzaFilter for JitsiConference {
                         info!("jingle map: {:?}", jingle_session.remote_ssrc_map.clone());
                       }
                       
-                      let length = self.inner.lock().await.participants.len();
-                      info!("Number of participants: {:?}", length);
-
-                      
+                      let pad_vector = self.remote_participant_video_sink_element().await.unwrap().pads();
+                      let length_of_pad_vector = pad_vector.len();
+                      info!("Lenth of pad vector: {:?}", length_of_pad_vector);
                       
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
