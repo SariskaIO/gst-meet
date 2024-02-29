@@ -996,8 +996,10 @@ impl JingleSession {
                       info!("Element: {:?}", some);
                       let row = num / 2;
                       let col = num % 2;
-                      let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                      let ypos = row as i32 * (self.config.clone().recv_video_scale_height as i32); 
+                      let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                      let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); 
+                      element.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
+                      element.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
                       element.set_property("xpos", xpos);
                       element.set_property("ypos", ypos);
                       num = num+1;
