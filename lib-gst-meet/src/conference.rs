@@ -1013,7 +1013,6 @@ impl StanzaFilter for JitsiConference {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                             compositor.release_request_pad(&result_element_pad_1);
-                            compositor.remove_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
                             info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
@@ -1026,6 +1025,12 @@ impl StanzaFilter for JitsiConference {
                       
                       let pad_vector = self.remote_participant_video_sink_element().await.unwrap().pads();
                       let length_of_pad_vector = pad_vector.len();
+
+                      for element in &pad_vector{
+                        info!("Element: {:?}", element);
+                        info!("Element: {:?}", element.name().to_string());
+                      }
+
                       info!("Lenth of pad vector: {:?}", length_of_pad_vector);
                       
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
