@@ -981,16 +981,32 @@ impl JingleSession {
                   },
                   MediaType::Video => {
                     let pad_length = sink_element.pads().clone().len()-1;
-                    for i in 0..pad_length{
-                      let row = i / 2;
-                      let col = i % 2;
-                      let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
-                      let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
-                      sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
-                      sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
-                      sink_pad.set_property("xpos", xpos);
-                      sink_pad.set_property("ypos", ypos);
+                    let pad_vector = self
+                        .sink_element()
+                        .await
+                        .unwrap()
+                        .pads();
+
+                    let filtered_vector: Vec<Pad> = pad_vector
+                      .iter()
+                      .filter(|&pad| pad.name().to_string() != "src")
+                      .cloned()
+                      .collect();
+
+                    let mut num = 0;
+
+                    for element in filtered_vector {
+                      let some = element.name().to_string();
+                      info!("Element: {:?}", some);
+                      let row = num / 2;
+                      let col = num % 2;
+                      let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
+                      let ypos = row as i32 * (self.config.clone().recv_video_scale_height as i32); 
+                      element.set_property("xpos", xpos);
+                      element.set_property("ypos", ypos);
+                      num = num+1;
                     }
+                    
                     // let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
                     // let number = last_digit.to_digit(10).unwrap_or(0) as usize;
                     // let row = number / 2;
