@@ -7,6 +7,7 @@ use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GObjectExtManualGst, GstBinExt, GstObjectExt, PadExt},
   Bin, Element, GhostPad,
 };
+use gstreamer::Pad;
 #[cfg(feature = "log-rtp")]
 use gstreamer_rtp::RTPBuffer;
 use gstreamer_rtp::{prelude::RTPHeaderExtensionExt, RTPHeaderExtension};
