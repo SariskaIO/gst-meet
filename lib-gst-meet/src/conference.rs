@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use colibri::{ColibriMessage, JsonMessage};
 use futures::stream::StreamExt;
 use glib::ObjectExt;
-use gstreamer::prelude::{ElementExt, ElementExtManual, GstBinExt};
+use gstreamer::prelude::{ElementExt, ElementExtManual, GstBinExt, GstObjectExt};
 use jitsi_xmpp_parsers::jingle::{Action, Jingle};
 use maplit::hashmap;
 use once_cell::sync::Lazy;
@@ -1026,9 +1026,9 @@ impl StanzaFilter for JitsiConference {
                       let pad_vector = self.remote_participant_video_sink_element().await.unwrap().pads();
                       let length_of_pad_vector = pad_vector.len();
 
-                      for element in &pad_vector{
-                        let some = *element;
-                        info!("Element: {:?}", some.name().to_string());
+                      for element in pad_vector{
+                        let some = element.name().to_string();
+                        info!("Element: {:?}", some);
                       }
 
                       info!("Lenth of pad vector: {:?}", length_of_pad_vector);
