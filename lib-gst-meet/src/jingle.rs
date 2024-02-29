@@ -984,10 +984,10 @@ impl JingleSession {
                     let number = last_digit.to_digit(10).unwrap_or(0) as usize;
                     let row = number / 2;
                     let col = number % 2;
-                    let xpos = col as i32 * 1280; // Assuming width is 1280
-                    let ypos = row as i32 * 720; // Assuming height is 720
-                    sink_pad.set_property("width", 1280);
-                    sink_pad.set_property("height", 720);
+                    let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
+                    let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
+                    sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
+                    sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
                     sink_pad.set_property("xpos", xpos);
                     sink_pad.set_property("ypos", ypos);
                   },
