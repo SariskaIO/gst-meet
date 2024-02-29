@@ -973,14 +973,21 @@ impl JingleSession {
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
 
-                sink_pad.set_property("width", 320);
-                sink_pad.set_property("height", 480);
-                sink_pad.set_property("xpos", 0);
-                sink_pad.set_property("ypos", 0);
+                match source.media_type {
+                  MediaType::Audio => {
+                    // Do noting
+                  },
+                  MediaType::Video => {
+                    sink_pad.set_property("width", 320);
+                    sink_pad.set_property("height", 480);
+                    sink_pad.set_property("xpos", 0);
+                    sink_pad.set_property("ypos", 0);
+                  },
+                }
 
                 let sink_pad_name = sink_pad.name().to_string();
                 // Set the sink name on the source
-                
+
                 let mut random_map = handle.block_on(async {
                   // Use handle.block_on to wait for the lock and access remote_ssrc_map
                   let mut jingle_session_guard = conference.jingle_session.lock().await;
@@ -1522,7 +1529,7 @@ impl JingleSession {
             .context("missing ssrc-info")?
             .owner
             .clone();
-          
+
           info!("adding ssrc to remote_ssrc_map 2: {:?}", ssrc);
           self.remote_ssrc_map.insert(
             ssrc.id,
