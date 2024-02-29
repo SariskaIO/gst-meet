@@ -973,19 +973,26 @@ impl JingleSession {
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
 
+                let sink_pad_name = sink_pad.name().to_string();
+
                 match source.media_type {
                   MediaType::Audio => {
                     // Do noting
                   },
                   MediaType::Video => {
-                    sink_pad.set_property("width", 320);
-                    sink_pad.set_property("height", 480);
-                    sink_pad.set_property("xpos", 0);
-                    sink_pad.set_property("ypos", 0);
+                    let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
+                    let number = last_digit.to_digit(10).unwrap_or(0) as usize;
+                    let row = number / 2;
+                    let col = number % 2;
+                    let xpos = col as i32 * 1280; // Assuming width is 1280
+                    let ypos = row as i32 * 720; // Assuming height is 720
+                    sink_pad.set_property("width", 1280);
+                    sink_pad.set_property("height", 720);
+                    sink_pad.set_property("xpos", xpos);
+                    sink_pad.set_property("ypos", ypos);
                   },
                 }
 
-                let sink_pad_name = sink_pad.name().to_string();
                 // Set the sink name on the source
 
                 let mut random_map = handle.block_on(async {
