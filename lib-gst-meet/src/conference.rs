@@ -5,6 +5,7 @@ use std::{
 };
 
 use glib::CastNone;
+use gstreamer::Pad;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use serde_json::json;
@@ -1027,9 +1028,9 @@ impl StanzaFilter for JitsiConference {
                         .unwrap()
                         .pads();
                       let length_of_pad_vector = pad_vector.len();
-                      let filtered_vector: Vec<GstPad> = pad_vector
+                      let filtered_vector: Vec<Pad> = pad_vector
                         .iter()
-                        .filter(|&pad| pad.name != "src")
+                        .filter(|&pad| pad.name().to_string() != "src")
                         .cloned()
                         .collect();
 
