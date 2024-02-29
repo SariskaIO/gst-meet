@@ -1020,6 +1020,11 @@ impl StanzaFilter for JitsiConference {
                         info!("jingle map: {:?}", jingle_session.remote_ssrc_map.clone());
                       }
                       
+                      let length = self.inner.lock().await.participants.len();
+                      info!("Number of participants: {:?}", length);
+
+                      
+                      
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
                       //   let recorder_domain =
