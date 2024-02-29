@@ -1027,8 +1027,8 @@ impl StanzaFilter for JitsiConference {
                       let length_of_pad_vector = pad_vector.len();
 
                       for element in &pad_vector{
-                        info!("Element: {:?}", element);
-                        info!("Element: {:?}", element.name().to_string());
+                        let some = *element;
+                        info!("Element: {:?}", some.name().to_string());
                       }
 
                       info!("Lenth of pad vector: {:?}", length_of_pad_vector);
