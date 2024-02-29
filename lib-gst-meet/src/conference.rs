@@ -414,7 +414,6 @@ impl JitsiConference {
     self.inner.lock().await.send_resolution = Some(height);
   }
 
-
   // Send messages through jingle session
   pub async fn send_colibri_message(&self, message: ColibriMessage) -> Result<()> {
     self
@@ -474,7 +473,6 @@ impl JitsiConference {
     }
     Ok(())
   }
-
 
   // Called whenever a new participant joins, including the very first one
   #[tracing::instrument(level = "trace", skip(f))]
@@ -1022,17 +1020,34 @@ impl StanzaFilter for JitsiConference {
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
                         info!("jingle map: {:?}", jingle_session.remote_ssrc_map.clone());
                       }
-                      
-                      let pad_vector = self.remote_participant_video_sink_element().await.unwrap().pads();
-                      let length_of_pad_vector = pad_vector.len();
 
-                      for element in pad_vector{
-                        let some = element.name().to_string();
+                      let pad_vector = self
+                        .remote_participant_video_sink_element()
+                        .await
+                        .unwrap()
+                        .pads();
+                      let length_of_pad_vector = pad_vector.len();
+                      let filtered_vector: Vec<GstPad> = pad_vector
+                        .iter()
+                        .filter(|&pad| pad.name != "src")
+                        .cloned()
+                        .collect();
+
+                      let num = 0;
+                      for element in filtered_vector {
+                        some = element.name().to_string();
                         info!("Element: {:?}", some);
+                        let num_cols = 2;
+                        let row = num / 2;
+                        let col = num % 2;
+                        let xpos = col as i32 * 1280; // Assuming width is 1280
+                        let ypos = row as i32 * 720; // Assuming height is 720
+                        element.set_property("xpos", xpos);
+                        element.set_property("ypos", ypos);
                       }
 
                       info!("Lenth of pad vector: {:?}", length_of_pad_vector);
-                      
+
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
                       //   let recorder_domain =
