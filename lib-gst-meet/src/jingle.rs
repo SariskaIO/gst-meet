@@ -980,7 +980,6 @@ impl JingleSession {
                     // Do noting
                   },
                   MediaType::Video => {
-                    info!("number of participants: {:?}", conference.participants.clone().len());
                     let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
                     let number = last_digit.to_digit(10).unwrap_or(0) as usize;
                     let row = number / 2;
