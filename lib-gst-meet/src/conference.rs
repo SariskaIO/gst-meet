@@ -1036,7 +1036,7 @@ impl StanzaFilter for JitsiConference {
 
                       let num = 0;
                       for element in filtered_vector {
-                        some = element.name().to_string();
+                        let some = element.name().to_string();
                         info!("Element: {:?}", some);
                         let num_cols = 2;
                         let row = num / 2;
