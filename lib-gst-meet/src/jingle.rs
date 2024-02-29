@@ -980,7 +980,7 @@ impl JingleSession {
                     // Do noting
                   },
                   MediaType::Video => {
-                    let pad_length = sink_element.pads().clone().len();
+                    let pad_length = sink_element.pads().clone().len()-1;
                     for i in 0..pad_length{
                       let row = i / 2;
                       let col = i % 2;
