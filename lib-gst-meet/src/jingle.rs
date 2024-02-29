@@ -980,16 +980,27 @@ impl JingleSession {
                     // Do noting
                   },
                   MediaType::Video => {
-                    let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
-                    let number = last_digit.to_digit(10).unwrap_or(0) as usize;
-                    let row = number / 2;
-                    let col = number % 2;
-                    let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
-                    let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
-                    sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
-                    sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
-                    sink_pad.set_property("xpos", xpos);
-                    sink_pad.set_property("ypos", ypos);
+                    let pad_length = sink_element.pads().clone().len();
+                    for i in 0 .. pad_length{
+                      let row = i / 2;
+                      let col = i % 2;
+                      let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
+                      let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
+                      sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
+                      sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
+                      sink_pad.set_property("xpos", xpos);
+                      sink_pad.set_property("ypos", ypos);
+                    }
+                    // let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
+                    // let number = last_digit.to_digit(10).unwrap_or(0) as usize;
+                    // let row = number / 2;
+                    // let col = number % 2;
+                    // let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
+                    // let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
+                    // sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
+                    // sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
+                    // sink_pad.set_property("xpos", xpos);
+                    // sink_pad.set_property("ypos", ypos);
                   },
                 }
 
