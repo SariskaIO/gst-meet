@@ -981,7 +981,7 @@ impl JingleSession {
                   },
                   MediaType::Video => {
                     let pad_length = sink_element.pads().clone().len();
-                    for i in 0 .. pad_length{
+                    for i in 0..pad_length{
                       let row = i / 2;
                       let col = i % 2;
                       let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
