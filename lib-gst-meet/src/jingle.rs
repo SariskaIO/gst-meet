@@ -981,11 +981,7 @@ impl JingleSession {
                   },
                   MediaType::Video => {
                     let pad_length = sink_element.pads().clone().len()-1;
-                    let pad_vector = self
-                        .sink_element()
-                        .await
-                        .unwrap()
-                        .pads();
+                    let pad_vector = sink_element.pads();
 
                     let filtered_vector: Vec<Pad> = pad_vector
                       .iter()
@@ -1006,7 +1002,6 @@ impl JingleSession {
                       element.set_property("ypos", ypos);
                       num = num+1;
                     }
-                    
                     // let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
                     // let number = last_digit.to_digit(10).unwrap_or(0) as usize;
                     // let row = number / 2;
