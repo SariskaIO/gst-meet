@@ -266,9 +266,7 @@ impl JitsiConference {
     if let Some(jingle_session) = self.jingle_session.lock().await.take() {
       debug!("pausing all sinks");
       jingle_session.pause_all_sinks();
-
       debug!("setting pipeline state to NULL");
-      info!("Setting pipeline state to NULL");
       if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
         warn!("failed to set pipeline state to NULL: {:?}", e);
       }
@@ -340,7 +338,6 @@ impl JitsiConference {
   #[tracing::instrument(level = "debug", err)]
   pub async fn add_bin(&self, bin: &gstreamer::Bin) -> Result<()> {
     let pipeline = self.pipeline().await?;
-    info!("Adding to the bin to the pipeline");
     pipeline.add(bin)?;
     bin.sync_state_with_parent()?;
     Ok(())
@@ -510,7 +507,6 @@ impl JitsiConference {
     &self,
     f: impl (Fn(JitsiConference, Participant) -> BoxedResultFuture) + Send + Sync + 'static,
   ) {
-    info!("Random info: On Participant left");
     self.inner.lock().await.on_participant_left = Some(Arc::new(f));
   }
 
@@ -972,15 +968,11 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                      info!("participant left here: {:?}", jid);
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
 
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
                         let mut map = jingle_session.remote_ssrc_map.clone();
-                        info!("remote source map: {:?}", map);
-
                         let mut sink_pad_name = "sdads";
-
                         for source in map.values().filter(|source| {
                           if let Some(participant_id) = &source.participant_id {
                             *participant_id == participantId
@@ -990,10 +982,6 @@ impl StanzaFilter for JitsiConference {
                           }
                         }) {
                           if let Some(sink_name) = &source.sink_name {
-                            println!(
-                              "sink_name for participant {}: {:?}",
-                              participantId, sink_name
-                            );
                             sink_pad_name = sink_name;
                           }
                         }
@@ -1003,17 +991,13 @@ impl StanzaFilter for JitsiConference {
                           .await
                           .unwrap()
                           .static_pad(sink_pad_name);
-                        info!("result_element_pad_1: {:?}", result_element_pad_1);
 
                         let number_of_participants = self.inner.lock().await.participants.len();
-                        info!("Number of participants: {:?}", number_of_participants);
 
                         if let Some(compositor) = jingle_session.pipeline().by_name("video") {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
-                            info!("Result Element Pad 1: {:?}", result_element_pad_1);
                             compositor.release_request_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
-                            info!("Result Element Pad 1: {:?}", result_element_pad_1);
                           }
                         }
                       }
@@ -1034,14 +1018,14 @@ impl StanzaFilter for JitsiConference {
                       let mut num = 0;
                       for element in filtered_vector {
                         let some = element.name().to_string();
-                        info!("Element: {:?}", some);
                         let row = num / 2;
                         let col = num % 2;
                         let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                        let ypos = row as i32 * (self.config.clone().recv_video_scale_height as i32); 
+                        let ypos =
+                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
                         element.set_property("xpos", xpos);
                         element.set_property("ypos", ypos);
-                        num = num+1;
+                        num = num + 1;
                       }
 
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {

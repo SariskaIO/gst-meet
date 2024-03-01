@@ -1,20 +1,20 @@
-use std::{convert::TryFrom, fmt, future::Future, sync::Arc};
+use reqwest::Client;
 use serde::Deserialize;
 use serde_json::json;
 use std::env;
-use reqwest::Client;
+use std::{convert::TryFrom, fmt, future::Future, sync::Arc};
 
 #[derive(Deserialize, Debug)]
 struct Gist {
-    token: String,
+  token: String,
 }
-use rand::{thread_rng, RngCore};
-use random_string::generate;
 use anyhow::{anyhow, bail, Context, Result};
 use futures::{
   sink::{Sink, SinkExt},
   stream::{Stream, StreamExt, TryStreamExt},
 };
+use rand::{thread_rng, RngCore};
+use random_string::generate;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_tungstenite::tungstenite::{
@@ -95,19 +95,19 @@ impl Connection {
     });
     let request_url = env::var("GENERATE_TOKEN_URL").unwrap_or("none".to_string());
     let response = Client::new()
-        .post(request_url)
-        .json(&gist_body)
-        .send().await?;
+      .post(request_url)
+      .json(&gist_body)
+      .send()
+      .await?;
 
     let gist: Gist = response.json().await?;
-    println!("Created {:?}", gist);
 
     let websocket_url_with_token = format!("{}{}{}", websocket_url, "&token=", gist.token);
     let xmpp_domain: BareJid = xmpp_domain.parse().context("invalid XMPP domain")?;
     info!("Connecting XMPP WebSocket to {}", websocket_url_with_token);
     let mut key = [0u8; 16];
     thread_rng().fill_bytes(&mut key);
-    
+
     let request = Request::get(&websocket_url_with_token)
       .header("sec-websocket-protocol", "xmpp")
       .header("sec-websocket-key", base64::encode(&key))
@@ -309,7 +309,12 @@ impl Connection {
         },
         ReceivingFeaturesPostAuthentication => {
           let charset = "1234567890";
-          let iq = Iq::from_set(generate_id(), BindQuery::new(Some(format!("{}_{}", "pricing_new",  generate(6, charset).to_string()).to_uppercase())));
+          let iq = Iq::from_set(
+            generate_id(),
+            BindQuery::new(Some(
+              format!("{}_{}", "pricing_new", generate(6, charset).to_string()).to_uppercase(),
+            )),
+          );
           tx.send(iq.into()).await?;
           locked_inner.state = Binding;
         },
@@ -318,11 +323,9 @@ impl Connection {
             let jid = if let IqType::Result(Some(element)) = iq.payload {
               let bind = BindResponse::try_from(element)?;
               FullJid::try_from(bind)?
-            }
-            else {
+            } else {
               bail!("bind failed");
             };
-            info!("My JID: {}", jid);
             locked_inner.jid = Some(jid.clone());
 
             locked_inner
@@ -346,8 +349,7 @@ impl Connection {
           let iq = Iq::try_from(element)?;
           if let IqType::Result(Some(element)) = iq.payload {
             let _disco_info = DiscoInfoResult::try_from(element)?;
-          }
-          else {
+          } else {
             bail!("disco failed");
           }
 
@@ -356,21 +358,20 @@ impl Connection {
               locked_inner.jid.as_ref().context("missing jid")?.clone(),
             ))
             .with_to(Jid::Bare(locked_inner.xmpp_domain.clone()));
-   info!("Discovering iq: {:?}", iq.clone());
+          info!("Discovering iq: {:?}", iq.clone());
           tx.send(iq.into()).await?;
           locked_inner.state = DiscoveringExternalServices;
         },
         DiscoveringExternalServices => {
           let iq = Iq::try_from(element)?;
-                    
+
           info!("DiscoveringExternalServicesg iq: {:?}", iq.clone());
 
           if let IqType::Result(Some(element)) = iq.payload {
             let services = xmpp::extdisco::ServicesResult::try_from(element)?;
             debug!("external services: {:?}", services.services);
             locked_inner.external_services = services.services;
-          }
-          else {
+          } else {
             warn!("discovering external services failed: STUN/TURN will not work");
           }
 

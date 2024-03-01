@@ -216,7 +216,7 @@ async fn main_inner() -> Result<()> {
     .transpose()
     .context("failed to parse send pipeline")?;
 
-    // Basically parses the cli command into a gstreamer pipeline(bin)
+  // Basically parses the cli command into a gstreamer pipeline(bin)
   let recv_pipeline = opt
     .recv_pipeline
     .as_ref()
@@ -256,7 +256,6 @@ async fn main_inner() -> Result<()> {
     .or_else(|| web_socket_url.host())
     .context("invalid WebSocket URL")?;
 
-  
   // Start a new connection
   let (connection, background) = Connection::new(
     &web_socket_url.to_string(),
@@ -347,7 +346,6 @@ async fn main_inner() -> Result<()> {
     .set_send_resolution(send_video_height.into())
     .await;
 
-  
   conference
     .send_colibri_message(ColibriMessage::ReceiverVideoConstraints {
       last_n: Some(opt.last_n.map(i32::from).unwrap_or(-1)),
@@ -402,8 +400,8 @@ async fn main_inner() -> Result<()> {
 
   if let Some(bin) = recv_pipeline {
     // Add pipeline (bin) to the pipeline
-    // A bin is simply an Element which can contain other elements inside it. In our case a pipeline 
-    // consists of multiple elements such as a source, sink, their respective pads and compositor etc. 
+    // A bin is simply an Element which can contain other elements inside it. In our case a pipeline
+    // consists of multiple elements such as a source, sink, their respective pads and compositor etc.
 
     // Only this matters for sariska use case
     conference.add_bin(&bin).await?;
@@ -493,32 +491,36 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-    
-
-    conference
+  conference
     .on_participant_left(move |_conference, participant| {
-        Box::pin(async move {
-            info!("We here: {:?}", participant);
-            // Attempt to retrieve the remote participant's video sink element when they leave
-            if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await {
-                // Perform operations on video_sink_element here
-                // For example, logging, setting state, etc.
-                info!("Participant left: {:?}, video sink element: {:?}", participant, video_sink_element);
+      Box::pin(async move {
+        // Attempt to retrieve the remote participant's video sink element when they leave
+        if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await
+        {
+          // Perform operations on video_sink_element here
+          // For example, logging, setting state, etc.
+          info!(
+            "Participant left: {:?}, video sink element: {:?}",
+            participant, video_sink_element
+          );
 
-                // Assuming there's a potential operation that returns Result<(), Error>
-                // video_sink_element.set_state(gstreamer::State::Null)?;
+          // Assuming there's a potential operation that returns Result<(), Error>
+          // video_sink_element.set_state(gstreamer::State::Null)?;
 
-                // Return Ok(()) if everything succeeds
-                Ok(())
-            } else {
-                // Handle the case where no video sink element is found
-                info!("No video sink element found for participant: {:?}", participant);
-                // Still return Ok(()) since it's not an error condition
-                Ok(())
-            }
+          // Return Ok(()) if everything succeeds
+          Ok(())
+        } else {
+          // Handle the case where no video sink element is found
+          info!(
+            "No video sink element found for participant: {:?}",
+            participant
+          );
+          // Still return Ok(()) since it's not an error condition
+          Ok(())
+        }
 
-            // If there are other error conditions, make sure to return Err(e) where e is an Error type
-        })
+        // If there are other error conditions, make sure to return Err(e) where e is an Error type
+      })
     })
     .await;
 
@@ -531,15 +533,14 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-    // Set the pipeline to play state to start flow of media stream
+  // Set the pipeline to play state to start flow of media stream
   conference
     .set_pipeline_state(gstreamer::State::Playing)
     .await?;
 
-  
   let conference_ = conference.clone();
   let main_loop_ = main_loop.clone();
-  
+
   // gracefully shut down a leave conference if ctrl_c is called
   tokio::spawn(async move {
     ctrl_c().await.unwrap();

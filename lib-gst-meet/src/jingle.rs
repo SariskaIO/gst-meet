@@ -3,11 +3,11 @@ use std::{collections::HashMap, fmt, net::SocketAddr};
 use anyhow::{anyhow, bail, Context, Result};
 use futures::stream::StreamExt;
 use glib::{Cast, ObjectExt, ToValue};
+use gstreamer::Pad;
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GObjectExtManualGst, GstBinExt, GstObjectExt, PadExt},
   Bin, Element, GhostPad,
 };
-use gstreamer::Pad;
 #[cfg(feature = "log-rtp")]
 use gstreamer_rtp::RTPBuffer;
 use gstreamer_rtp::{prelude::RTPHeaderExtensionExt, RTPHeaderExtension};
@@ -308,7 +308,6 @@ impl JingleSession {
         .owner
         .clone();
 
-      info!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
       remote_ssrc_map.insert(
         ssrc.id,
         Source {
@@ -646,11 +645,10 @@ impl JingleSession {
       let jingle_session = jingle_session.clone();
       let f = move || {
         let rtpjitterbuffer: gstreamer::Element = values[1].get()?;
-        info!("rtp JitterBuffer {:?}", rtpjitterbuffer);
+        debug!("rtp JitterBuffer {:?}", rtpjitterbuffer);
         let session: u32 = values[2].get()?;
-        info!("rtp session {:?}", session);
+        debug!("rtp session {:?}", session);
         let ssrc: u32 = values[3].get()?;
-        info!("rtp ssrc {:?}", ssrc);
         debug!(
           "new jitterbuffer created for session {} ssrc {}",
           session, ssrc
@@ -801,8 +799,6 @@ impl JingleSession {
                   .clone(),
               )
             })?;
-
-            info!("pad added for remote source: {:?}", source);
 
             let depayloader = match source.media_type {
               MediaType::Audio => {
@@ -981,7 +977,7 @@ impl JingleSession {
                     // Do noting
                   },
                   MediaType::Video => {
-                    let pad_length = sink_element.pads().clone().len()-1;
+                    let pad_length = sink_element.pads().clone().len() - 1;
                     let pad_vector = sink_element.pads();
 
                     let filtered_vector: Vec<Pad> = pad_vector
@@ -994,27 +990,24 @@ impl JingleSession {
 
                     for element in filtered_vector {
                       let some = element.name().to_string();
-                      info!("Element: {:?}", some);
                       let row = num / 2;
                       let col = num % 2;
-                      let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                      let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); 
-                      element.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
-                      element.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
+                      let xpos =
+                        col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                      let ypos =
+                        row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                      element.set_property(
+                        "width",
+                        conference.config.recv_video_scale_width.clone() as i32,
+                      );
+                      element.set_property(
+                        "height",
+                        conference.config.recv_video_scale_height.clone() as i32,
+                      );
                       element.set_property("xpos", xpos);
                       element.set_property("ypos", ypos);
-                      num = num+1;
+                      num = num + 1;
                     }
-                    // let last_digit = sink_pad_name.clone().chars().rev().next().unwrap_or('0');
-                    // let number = last_digit.to_digit(10).unwrap_or(0) as usize;
-                    // let row = number / 2;
-                    // let col = number % 2;
-                    // let xpos = col as i32 * (conference.config.recv_video_scale_width.clone() as i32); // Assuming width is 1280
-                    // let ypos = row as i32 * (conference.config.recv_video_scale_height.clone() as i32); // Assuming height is 720
-                    // sink_pad.set_property("width", conference.config.recv_video_scale_width.clone() as i32);
-                    // sink_pad.set_property("height", conference.config.recv_video_scale_height.clone() as i32);
-                    // sink_pad.set_property("xpos", xpos);
-                    // sink_pad.set_property("ypos", ypos);
                   },
                 }
 
@@ -1057,13 +1050,6 @@ impl JingleSession {
 
                 // TODO: set caps on ghost pad
                 source.sink_name = Some(sink_pad_name.clone());
-
-                info!("Ghost Pad: {:?}", ghost_pad);
-                info!("participant_id: {:?}", participant_id);
-                info!("source.media_type: {:?}", source.media_type);
-                info!("source.ssrc: {:?}", source.ssrc);
-                info!("sink_pad_name: {:?}", source.sink_name);
-
                 // Get the pad of the bin
                 let bin: Bin = sink_element
                   .parent()
@@ -1562,7 +1548,6 @@ impl JingleSession {
             .owner
             .clone();
 
-          info!("adding ssrc to remote_ssrc_map 2: {:?}", ssrc);
           self.remote_ssrc_map.insert(
             ssrc.id,
             Source {
