@@ -1,10 +1,14 @@
+use core::ascii;
+use std::fmt::format;
 use std::{
   collections::HashMap, convert::TryFrom, fmt, future::Future, pin::Pin, sync::Arc, time::Duration,
 };
 
-use serde_json::json;
+use glib::CastNone;
+use gstreamer::Pad;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
+use serde_json::json;
 use std::env;
 use std::thread;
 
@@ -13,7 +17,7 @@ use async_trait::async_trait;
 use colibri::{ColibriMessage, JsonMessage};
 use futures::stream::StreamExt;
 use glib::ObjectExt;
-use gstreamer::prelude::{ElementExt, ElementExtManual, GstBinExt};
+use gstreamer::prelude::{ElementExt, ElementExtManual, GstBinExt, GstObjectExt};
 use jitsi_xmpp_parsers::jingle::{Action, Jingle};
 use maplit::hashmap;
 use once_cell::sync::Lazy;
@@ -41,6 +45,7 @@ use xmpp_parsers::{
   BareJid, FullJid, Jid,
 };
 
+use crate::jingle;
 use crate::{
   colibri::ColibriChannel,
   jingle::JingleSession,
@@ -219,6 +224,8 @@ impl JitsiConference {
         .map(|feature| feature.into()),
     );
 
+    // here is where a new jingle session is crearted along with other stuff
+    // While the conference is created after a connection is made
     let conference = Self {
       glib_main_context,
       jid: xmpp_connection
@@ -259,7 +266,6 @@ impl JitsiConference {
     if let Some(jingle_session) = self.jingle_session.lock().await.take() {
       debug!("pausing all sinks");
       jingle_session.pause_all_sinks();
-
       debug!("setting pipeline state to NULL");
       if let Err(e) = jingle_session.pipeline().set_state(gstreamer::State::Null) {
         warn!("failed to set pipeline state to NULL: {:?}", e);
@@ -338,6 +344,14 @@ impl JitsiConference {
   }
 
   #[tracing::instrument(level = "debug", err)]
+  pub async fn remove_bin(&self, bin: &gstreamer::Bin) -> Result<()> {
+    let pipeline = self.pipeline().await?;
+    pipeline.remove(bin)?;
+    bin.sync_state_with_parent()?;
+    Ok(())
+  }
+
+  #[tracing::instrument(level = "debug", err)]
   pub async fn set_pipeline_state(&self, state: gstreamer::State) -> Result<()> {
     self.pipeline().await?.call_async(move |p| {
       if let Err(e) = p.set_state(state) {
@@ -398,6 +412,7 @@ impl JitsiConference {
     self.inner.lock().await.send_resolution = Some(height);
   }
 
+  // Send messages through jingle session
   pub async fn send_colibri_message(&self, message: ColibriMessage) -> Result<()> {
     self
       .jingle_session
@@ -411,7 +426,6 @@ impl JitsiConference {
       .send(message)
       .await
   }
-
 
   pub async fn send_json_message<T: Serialize>(&self, payload: &T) -> Result<()> {
     let message = Message {
@@ -446,8 +460,7 @@ impl JitsiConference {
       if let Some(f) = self.inner.lock().await.on_participant.as_ref().cloned() {
         if let Err(e) = f(self.clone(), participant.clone()).await {
           warn!("on_participant failed: {:?}", e);
-        }
-        else if let Ok(pipeline) = self.pipeline().await {
+        } else if let Ok(pipeline) = self.pipeline().await {
           gstreamer::debug_bin_to_dot_file(
             &pipeline,
             gstreamer::DebugGraphDetails::ALL,
@@ -459,6 +472,7 @@ impl JitsiConference {
     Ok(())
   }
 
+  // Called whenever a new participant joins, including the very first one
   #[tracing::instrument(level = "trace", skip(f))]
   pub async fn on_participant(
     &self,
@@ -472,14 +486,13 @@ impl JitsiConference {
       locked_inner.participants.values().cloned().collect()
     };
     for participant in existing_participants {
-      debug!(
+      info!(
         "calling on_participant with existing participant: {:?}",
         participant
       );
       if let Err(e) = f(self.clone(), participant.clone()).await {
         warn!("on_participant failed: {:?}", e);
-      }
-      else if let Ok(pipeline) = self.pipeline().await {
+      } else if let Ok(pipeline) = self.pipeline().await {
         gstreamer::debug_bin_to_dot_file(
           &pipeline,
           gstreamer::DebugGraphDetails::ALL,
@@ -535,8 +548,7 @@ impl StanzaFilter for JitsiConference {
           if !ready {
             bail!("focus reports room not ready");
           }
-        }
-        else {
+        } else {
           bail!("focus IQ failed");
         };
 
@@ -594,8 +606,7 @@ impl StanzaFilter for JitsiConference {
                       self.xmpp_tx.send(iq.into()).await?;
                     },
                   }
-                }
-                else {
+                } else {
                   let iq = Iq::from_result(iq.id, Some(DISCO_INFO.clone()))
                     .with_from(Jid::Full(self.jid.clone()))
                     .with_to(iq.from.unwrap());
@@ -615,12 +626,10 @@ impl StanzaFilter for JitsiConference {
 
                       *self.jingle_session.lock().await =
                         Some(JingleSession::initiate(self, jingle).await?);
-                    }
-                    else {
+                    } else {
                       debug!("Ignored Jingle session-initiate from {}", from_jid);
                     }
-                  }
-                  else if jingle.action == Action::SourceAdd {
+                  } else if jingle.action == Action::SourceAdd {
                     debug!("Received Jingle source-add");
 
                     // Acknowledge the IQ
@@ -637,8 +646,7 @@ impl StanzaFilter for JitsiConference {
                       .source_add(jingle)
                       .await?;
                   }
-                }
-                else {
+                } else {
                   debug!("Received Jingle IQ from invalid JID: {:?}", iq.from);
                 }
               },
@@ -681,12 +689,8 @@ impl StanzaFilter for JitsiConference {
                             .await
                             .ok()
                             .and_then(|pipeline| pipeline.by_name("rtpbin"))
-                            .map(|rtpbin| {
-                              rtpbin.emit_by_name("get-session", &[&0u32])
-                            })
-                            .map(|rtpsession: gstreamer::Element| {
-                              rtpsession.property("stats")
-                            })
+                            .map(|rtpbin| rtpbin.emit_by_name("get-session", &[&0u32]))
+                            .map(|rtpsession: gstreamer::Element| rtpsession.property("stats"))
                             .and_then(|stats: gstreamer::Structure| stats.get("source-stats").ok())
                             .and_then(|stats: glib::ValueArray| {
                               stats
@@ -845,8 +849,7 @@ impl StanzaFilter for JitsiConference {
                             if let Err(e) = colibri_channel.send(stats).await {
                               warn!("failed to send stats: {:?}", e);
                             }
-                          }
-                          else {
+                          } else {
                             warn!("unable to get stats from pipeline");
                           }
                           interval.tick().await;
@@ -913,8 +916,7 @@ impl StanzaFilter for JitsiConference {
             },
             _ => {},
           }
-        }
-        else if let Ok(presence) = Presence::try_from(element) {
+        } else if let Ok(presence) = Presence::try_from(element) {
           if let Jid::Full(from) = presence
             .from
             .as_ref()
@@ -937,7 +939,10 @@ impl StanzaFilter for JitsiConference {
               {
                 // Hack until https://gitlab.com/xmpp-rs/xmpp-rs/-/issues/88 is resolved
                 // We're not interested in the actor element, and xmpp-parsers fails to parse it, so just remove it.
-                for item in muc_user_payload.children_mut().filter(|child| child.name() == "item") {
+                for item in muc_user_payload
+                  .children_mut()
+                  .filter(|child| child.name() == "item")
+                {
                   while item.remove_child("actor", ns::MUC_USER).is_some() {}
                 }
 
@@ -963,74 +968,149 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                         println!("participant left: {:?}", jid);
-                        // Simulate the timeout using `tokio::time::sleep` 
+                      let participantId = jid.node.clone().unwrap_or_default().to_string();
 
-                        fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {  
-                          let mut real_participant_count = 0;
-                          let recorder_domain = env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
+                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
+                        let mut map = jingle_session.remote_ssrc_map.clone();
+                        let mut sink_pad_name = "sdads";
+                        for source in map.values().filter(|source| {
+                          if let Some(participant_id) = &source.participant_id {
+                            *participant_id == participantId
+                          } else {
+                            println!("participant_id is None");
+                            false
+                          }
+                        }) {
+                          if let Some(sink_name) = &source.sink_name {
+                            sink_pad_name = sink_name;
+                          }
+                        }
 
-                          for (_key, participant) in participants {
-                            println!("Participant {:?}", participant);
-                            if let Some(FullJid { node, domain, resource }) = &participant.jid {
-                              println!("Domain: {}", domain);
-                              if recorder_domain.to_string() == domain.to_string() {
-                                println!("Contains '{}'", domain);
-                              } else {
-                                real_participant_count = real_participant_count + 1;
-                             }
-                           }
-                         }
-                         real_participant_count
-                      }
-                   let reconnect_window_str = env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
-                   let reconnect_window = if reconnect_window_str == "none" {
-                     60000                   
-                    } else {
-                       reconnect_window_str.parse::<u64>().unwrap_or(60000)
-                    };
-
-                    tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
-                    let participants = &self
-                         .inner
-                          .lock()
+                        let result_element_pad_1 = self
+                          .remote_participant_video_sink_element()
                           .await
-                          .participants;
-                     
-                     let participants_count = get_real_participants(participants.clone());
-                     if participants_count == 0 {
-                        let client = reqwest::Client::new(); // Use reqwest::Client for sending HTTP requests
-                        let api_host = env::var("API_HOST").unwrap_or("none".to_string());
-                        let url = format!("https://{}/terraform/v1/hooks/srs/stopRecording", api_host);
-                        let data = json!({
-                            "room_name": env::var("ROOM_NAME").unwrap_or("none".to_string())
-                        });
-                        let auth_token = env::var("AUTH_TOKEN").unwrap_or("none".to_string());
-                        let response = client
-                           .post(&url)
-                           .json(&data)
-                          .header("Authorization", format!("Bearer {}", auth_token))
-                          .send()
-                         .await?; // Use await since this is within an async context
-                       println!("Response status code: {}", response.status());
-                       println!("Response body:\n{}", response.text().await?);           
-                    }
-                    
-                   debug!("participant left: {:?}", jid);
-                       if let Some(f) = &self
-                        .inner
-                        .lock()
-                        .await
-                        .on_participant_left
-                        .as_ref()
-                        .cloned()
-                      {
-                        debug!("calling on_participant_left with old participant");
-                        if let Err(e) = f(self.clone(), participant).await {
-                          warn!("on_participant_left failed: {:?}", e);
+                          .unwrap()
+                          .static_pad(sink_pad_name);
+
+                        let number_of_participants = self.inner.lock().await.participants.len();
+
+                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
+                          if let Some(result_element_pad_1) = result_element_pad_1 {
+                            compositor.release_request_pad(&result_element_pad_1);
+                            compositor.sync_state_with_parent();
+                          }
                         }
                       }
+
+                      let pad_vector = self
+                        .remote_participant_video_sink_element()
+                        .await
+                        .unwrap()
+                        .pads();
+
+                      // filter out just the video sink pads
+                      let filtered_vector: Vec<Pad> = pad_vector
+                        .iter()
+                        .filter(|&pad| pad.name().to_string() != "src")
+                        .cloned()
+                        .collect();
+
+                      let mut num = 0;
+                      for element in filtered_vector {
+                        let some = element.name().to_string();
+                        let row = num / 2;
+                        let col = num % 2;
+                        let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
+                        let ypos =
+                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
+                        element.set_property("xpos", xpos);
+                        element.set_property("ypos", ypos);
+                        num = num + 1;
+                      }
+
+                      // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
+                      //   let mut real_participant_count = 0;
+                      //   let recorder_domain =
+                      //     env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
+
+                      //   for (_key, participant) in participants {
+                      //     println!("Participant {:?}", participant);
+                      //     if let Some(FullJid {
+                      //       node,
+                      //       domain,
+                      //       resource,
+                      //     }) = &participant.jid
+                      //     {
+                      //       println!("Domain: {}", domain);
+                      //       if recorder_domain.to_string() == domain.to_string() {
+                      //         println!("Contains '{}'", domain);
+                      //       } else {
+                      //         real_participant_count = real_participant_count + 1;
+                      //       }
+                      //     }
+                      //   }
+                      //   // returns the real participant count
+                      //   real_participant_count
+                      // }
+                      // let reconnect_window_str =
+                      //   env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
+
+                      // // The reconnect window is set to 60 seconds by default if the RECONNECT_WINDOW is not set
+                      // let reconnect_window = if reconnect_window_str == "none" {
+                      //   60000
+                      // } else {
+                      //   reconnect_window_str.parse::<u64>().unwrap_or(60000)
+                      // };
+
+                      // tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
+
+                      // // Get the participants from the inner lock
+                      // let participants = &self.inner.lock().await.participants;
+
+                      // let participants_count = get_real_participants(participants.clone());
+
+                      // // TODO: Print to check the participants count
+
+                      // // Stop the live stream/recording if the participants count is 0
+                      // if participants_count == 0 {
+                      //   let client = reqwest::Client::new(); // Use reqwest::Client for sending HTTP requests
+                      //   let api_host = env::var("API_HOST").unwrap_or("none".to_string());
+                      //   let url =
+                      //     format!("https://{}/terraform/v1/hooks/srs/stopRecording", api_host);
+                      //   let data = json!({
+                      //       "room_name": env::var("ROOM_NAME").unwrap_or("none".to_string())
+                      //   });
+                      //   let auth_token = env::var("AUTH_TOKEN").unwrap_or("none".to_string());
+                      //   let response = client
+                      //     .post(&url)
+                      //     .json(&data)
+                      //     .header("Authorization", format!("Bearer {}", auth_token))
+                      //     .send()
+                      //     .await?; // Use await since this is within an async context
+                      //   println!("Response status code: {}", response.status());
+                      //   println!("Response body:\n{}", response.text().await?);
+                      // }
+
+                      // // Call the on_participant_left function  // for some reason this is not working
+                      // info!("participant left: {:?}", jid);
+
+                      // if let Some(f) = &self
+                      //   .inner
+                      //   .lock()
+                      //   .await
+                      //   .on_participant_left
+                      //   .as_ref()
+                      //   .cloned()
+                      // {
+                      //   debug!("calling on_participant_left with old participant");
+                      //   info!("calling on_participant_left with old participant");
+                      //   if let Err(e) = f(self.clone(), participant).await {
+                      //     info!("on_participant_left failed: {:?}", e);
+                      //     warn!("on_participant_left failed: {:?}", e);
+                      //   }
+                      // }
                     }
+                    // if the presense type is not unavailable, then add the participant
                     else if self
                       .inner
                       .lock()
@@ -1039,13 +1119,12 @@ impl StanzaFilter for JitsiConference {
                       .insert(from.resource.clone(), participant.clone())
                       .is_none()
                     {
-                      debug!("new participant: {:?}", jid);
+                      info!("new participant: {:?}", jid);
                       if let Some(f) = &self.inner.lock().await.on_participant.as_ref().cloned() {
                         debug!("calling on_participant with new participant");
                         if let Err(e) = f(self.clone(), participant.clone()).await {
                           warn!("on_participant failed: {:?}", e);
-                        }
-                        else if let Some(jingle_session) =
+                        } else if let Some(jingle_session) =
                           self.jingle_session.lock().await.as_ref()
                         {
                           gstreamer::debug_bin_to_dot_file(

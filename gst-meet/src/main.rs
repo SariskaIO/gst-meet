@@ -1,11 +1,12 @@
-use std::{collections::HashMap, time::Duration};
 use std::env;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{bail, Context, Result};
 #[cfg(target_os = "macos")]
 use cocoa::appkit::NSApplication;
 use colibri::{ColibriMessage, Constraints, VideoType};
 use glib::ObjectExt;
+use gstreamer::prelude::GstBinExtManual;
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GstBinExt},
   GhostPad,
@@ -48,19 +49,13 @@ struct Opt {
   )]
   focus_jid: Option<String>,
 
-  #[structopt(
-    long,
-    help = "If not specified, anonymous auth is used."
-  )]
+  #[structopt(long, help = "If not specified, anonymous auth is used.")]
   xmpp_username: Option<String>,
 
   #[structopt(long)]
   xmpp_password: Option<String>,
 
-  #[structopt(
-    long,
-    help = "The JWT token for Jitsi JWT authentication"
-  )]
+  #[structopt(long, help = "The JWT token for Jitsi JWT authentication")]
   xmpp_jwt: Option<String>,
 
   #[structopt(
@@ -221,6 +216,7 @@ async fn main_inner() -> Result<()> {
     .transpose()
     .context("failed to parse send pipeline")?;
 
+  // Basically parses the cli command into a gstreamer pipeline(bin)
   let recv_pipeline = opt
     .recv_pipeline
     .as_ref()
@@ -241,14 +237,17 @@ async fn main_inner() -> Result<()> {
       if !qs.contains_key("room") {
         qs.insert("room".to_owned(), opt.room_name.clone());
       }
-      Ok::<_, anyhow::Error>(format!(
-        "{}?{}",
-        path_and_query.path(),
-        serde_urlencoded::to_string(&qs)?,
-      ).parse()?)
+      Ok::<_, anyhow::Error>(
+        format!(
+          "{}?{}",
+          path_and_query.path(),
+          serde_urlencoded::to_string(&qs)?,
+        )
+        .parse()?,
+      )
     })
     .transpose()?;
-  
+
   web_socket_url = Uri::from_parts(web_socket_url_parts)?;
 
   let xmpp_domain = opt
@@ -257,17 +256,20 @@ async fn main_inner() -> Result<()> {
     .or_else(|| web_socket_url.host())
     .context("invalid WebSocket URL")?;
 
+  // Start a new connection
   let (connection, background) = Connection::new(
     &web_socket_url.to_string(),
     xmpp_domain,
     match opt.xmpp_username {
       Some(username) => Authentication::Plain {
         username,
-        password: opt.xmpp_password.context("if xmpp-username is provided, xmpp-password must also be provided")?,
+        password: opt
+          .xmpp_password
+          .context("if xmpp-username is provided, xmpp-password must also be provided")?,
       },
       None => match opt.xmpp_jwt {
-          Some(token) => Authentication::Jwt { token },
-          None => Authentication::Anonymous,
+        Some(token) => Authentication::Jwt { token },
+        None => Authentication::Anonymous,
       },
     },
     &opt.room_name,
@@ -335,6 +337,7 @@ async fn main_inner() -> Result<()> {
 
   let main_loop = glib::MainLoop::new(None, false);
 
+  // Create a conference, create jingle session, join conference and return conference
   let conference = JitsiConference::join(connection, main_loop.context(), config)
     .await
     .context("failed to join conference")?;
@@ -373,32 +376,37 @@ async fn main_inner() -> Result<()> {
   if let Some(bin) = send_pipeline {
     conference.add_bin(&bin).await?;
 
+    // Link audio compositor to audio sink element
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
       let audio_sink = conference.audio_sink_element().await?;
       audio.link(&audio_sink)?;
-    }
-    else {
+    } else {
       conference.set_muted(MediaType::Audio, true).await?;
     }
 
+    // Link video compositor to video sink element
     if let Some(video) = bin.by_name("video") {
       info!("Found video element in pipeline, linking...");
       let video_sink = conference.video_sink_element().await?;
       video.link(&video_sink)?;
-    }
-    else {
+    } else {
       conference.set_muted(MediaType::Video, true).await?;
     }
-  }
-  else {
+  } else {
     conference.set_muted(MediaType::Audio, true).await?;
     conference.set_muted(MediaType::Video, true).await?;
   }
 
   if let Some(bin) = recv_pipeline {
+    // Add pipeline (bin) to the pipeline
+    // A bin is simply an Element which can contain other elements inside it. In our case a pipeline
+    // consists of multiple elements such as a source, sink, their respective pads and compositor etc.
+
+    // Only this matters for sariska use case
     conference.add_bin(&bin).await?;
 
+    // Takes the audio compositor and attached to the conference
     if let Some(audio_element) = bin.by_name("audio") {
       info!(
         "recv pipeline has an audio element, a sink pad will be requested from it for each participant"
@@ -408,6 +416,8 @@ async fn main_inner() -> Result<()> {
         .await;
     }
 
+    // Takes te video compositor and attach to the conference
+    // This video compositor will have multiple sinks in which the actual videos of the participants will play
     if let Some(video_element) = bin.by_name("video") {
       info!(
         "recv pipeline has a video element, a sink pad will be requested from it for each participant"
@@ -418,19 +428,20 @@ async fn main_inner() -> Result<()> {
     }
   }
 
+  // Does not apply to sariska
   conference
     .on_participant(move |conference, participant| {
       let recv_pipeline_participant_template = recv_pipeline_participant_template.clone();
       Box::pin(async move {
         info!("New participant: {:?}", participant);
-       if env::var("PROFILE").unwrap_or("none".to_string()) == "HD" {
+        if env::var("PROFILE").unwrap_or("none".to_string()) == "HD" {
           conference
-          .send_colibri_message(ColibriMessage::SelectedEndpointsChangedEvent {
-            selected_endpoints: [participant.muc_jid.resource.clone()].to_vec()
-          })
-          .await?;
+            .send_colibri_message(ColibriMessage::SelectedEndpointsChangedEvent {
+              selected_endpoints: [participant.muc_jid.resource.clone()].to_vec(),
+            })
+            .await?;
         }
-        
+
         if let Some(template) = recv_pipeline_participant_template {
           let pipeline_description = template
             .replace(
@@ -451,7 +462,6 @@ async fn main_inner() -> Result<()> {
             )
             .replace("{participant_id}", &participant.muc_jid.resource)
             .replace("{nick}", &participant.nick.unwrap_or_default());
-
           let bin = gstreamer::parse_bin_from_description(&pipeline_description, false)
             .context("failed to parse recv pipeline participant template")?;
 
@@ -484,8 +494,32 @@ async fn main_inner() -> Result<()> {
   conference
     .on_participant_left(move |_conference, participant| {
       Box::pin(async move {
-        info!("Participant left: {:?}", participant);
-        Ok(())
+        // Attempt to retrieve the remote participant's video sink element when they leave
+        if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await
+        {
+          // Perform operations on video_sink_element here
+          // For example, logging, setting state, etc.
+          info!(
+            "Participant left: {:?}, video sink element: {:?}",
+            participant, video_sink_element
+          );
+
+          // Assuming there's a potential operation that returns Result<(), Error>
+          // video_sink_element.set_state(gstreamer::State::Null)?;
+
+          // Return Ok(()) if everything succeeds
+          Ok(())
+        } else {
+          // Handle the case where no video sink element is found
+          info!(
+            "No video sink element found for participant: {:?}",
+            participant
+          );
+          // Still return Ok(()) since it's not an error condition
+          Ok(())
+        }
+
+        // If there are other error conditions, make sure to return Err(e) where e is an Error type
       })
     })
     .await;
@@ -499,12 +533,15 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
+  // Set the pipeline to play state to start flow of media stream
   conference
     .set_pipeline_state(gstreamer::State::Playing)
     .await?;
 
   let conference_ = conference.clone();
   let main_loop_ = main_loop.clone();
+
+  // gracefully shut down a leave conference if ctrl_c is called
   tokio::spawn(async move {
     ctrl_c().await.unwrap();
 
