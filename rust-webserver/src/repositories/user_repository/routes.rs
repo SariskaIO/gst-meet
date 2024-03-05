@@ -367,7 +367,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -388,10 +388,6 @@ pub async fn start_recording(
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
             compositor name=video \
-            sink_0::xpos=0 sink_0::ypos=0 \
-            sink_1::xpos=0 sink_1::ypos=640 \
-            sink_2::xpos=0 sink_2::ypos=1280 \
-            sink_3::xpos=0 sink_3::ypos=1280 \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
             API_HOST,
@@ -433,7 +429,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -468,7 +464,7 @@ pub async fn start_recording(
         --recv-video-scale-width=640 \
         --recv-video-scale-height=360 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
