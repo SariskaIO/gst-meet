@@ -495,32 +495,7 @@ async fn main_inner() -> Result<()> {
     .on_participant_left(move |_conference, participant| {
       info!("Random Random Random");
       Box::pin(async move {
-        // Attempt to retrieve the remote participant's video sink element when they leave
-        if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await
-        {
-          // Perform operations on video_sink_element here
-          // For example, logging, setting state, etc.
-          info!(
-            "Participant left: {:?}, video sink element: {:?}",
-            participant, video_sink_element
-          );
-
-          // Assuming there's a potential operation that returns Result<(), Error>
-          // video_sink_element.set_state(gstreamer::State::Null)?;
-
-          // Return Ok(()) if everything succeeds
-          Ok(())
-        } else {
-          // Handle the case where no video sink element is found
-          info!(
-            "No video sink element found for participant: {:?}",
-            participant
-          );
-          // Still return Ok(()) since it's not an error condition
-          Ok(())
-        }
-
-        // If there are other error conditions, make sure to return Err(e) where e is an Error type
+        info!("Random Random Random Random");
       })
     })
     .await;
