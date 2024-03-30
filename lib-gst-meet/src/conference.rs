@@ -968,147 +968,20 @@ impl StanzaFilter for JitsiConference {
                         .remove(&from.resource.clone())
                         .is_some()
                     {
-                      let participantId = jid.node.clone().unwrap_or_default().to_string();
-
-                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
-                        let mut map = jingle_session.remote_ssrc_map.clone();
-                        let mut sink_pad_name = "sdads";
-                        for source in map.values().filter(|source| {
-                          if let Some(participant_id) = &source.participant_id {
-                            *participant_id == participantId
-                          } else {
-                            println!("participant_id is None");
-                            false
-                          }
-                        }) {
-                          if let Some(sink_name) = &source.sink_name {
-                            sink_pad_name = sink_name;
-                          }
-                        }
-
-                        let result_element_pad_1 = self
-                          .remote_participant_video_sink_element()
-                          .await
-                          .unwrap()
-                          .static_pad(sink_pad_name);
-
-                        let number_of_participants = self.inner.lock().await.participants.len();
-
-                        if let Some(compositor) = jingle_session.pipeline().by_name("video") {
-                          if let Some(result_element_pad_1) = result_element_pad_1 {
-                            compositor.release_request_pad(&result_element_pad_1);
-                            compositor.sync_state_with_parent();
-                          }
-                        }
-                      }
-
-                      let pad_vector = self
-                        .remote_participant_video_sink_element()
+                      info!("participant left: {:?}", jid);
+                      if let Some(f) = &self
+                        .inner
+                        .lock()
                         .await
-                        .unwrap()
-                        .pads();
-
-                      // filter out just the video sink pads
-                      let filtered_vector: Vec<Pad> = pad_vector
-                        .iter()
-                        .filter(|&pad| pad.name().to_string() != "src")
+                        .on_participant_left
+                        .as_ref()
                         .cloned()
-                        .collect();
-
-                      let mut num = 0;
-                      for element in filtered_vector {
-                        let some = element.name().to_string();
-                        let row = num / 2;
-                        let col = num % 2;
-                        let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                        let ypos =
-                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
-                        element.set_property("xpos", xpos);
-                        element.set_property("ypos", ypos);
-                        num = num + 1;
+                      {
+                        info!("calling on_participant_left with old participant");
+                        if let Err(e) = f(self.clone(), participant).await {
+                          info!("on_participant_left failed: {:?}", e);
+                        }
                       }
-
-                      // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
-                      //   let mut real_participant_count = 0;
-                      //   let recorder_domain =
-                      //     env::var("RECORDER_DOMAIN").unwrap_or("recorder.sariska.io".to_string());
-
-                      //   for (_key, participant) in participants {
-                      //     println!("Participant {:?}", participant);
-                      //     if let Some(FullJid {
-                      //       node,
-                      //       domain,
-                      //       resource,
-                      //     }) = &participant.jid
-                      //     {
-                      //       println!("Domain: {}", domain);
-                      //       if recorder_domain.to_string() == domain.to_string() {
-                      //         println!("Contains '{}'", domain);
-                      //       } else {
-                      //         real_participant_count = real_participant_count + 1;
-                      //       }
-                      //     }
-                      //   }
-                      //   // returns the real participant count
-                      //   real_participant_count
-                      // }
-                      // let reconnect_window_str =
-                      //   env::var("RECONNECT_WINDOW").unwrap_or("none".to_string());
-
-                      // // The reconnect window is set to 60 seconds by default if the RECONNECT_WINDOW is not set
-                      // let reconnect_window = if reconnect_window_str == "none" {
-                      //   60000
-                      // } else {
-                      //   reconnect_window_str.parse::<u64>().unwrap_or(60000)
-                      // };
-
-                      // tokio::time::sleep(Duration::from_millis(reconnect_window)).await;
-
-                      // // Get the participants from the inner lock
-                      // let participants = &self.inner.lock().await.participants;
-
-                      // let participants_count = get_real_participants(participants.clone());
-
-                      // // TODO: Print to check the participants count
-
-                      // // Stop the live stream/recording if the participants count is 0
-                      // if participants_count == 0 {
-                      //   let client = reqwest::Client::new(); // Use reqwest::Client for sending HTTP requests
-                      //   let api_host = env::var("API_HOST").unwrap_or("none".to_string());
-                      //   let url =
-                      //     format!("https://{}/terraform/v1/hooks/srs/stopRecording", api_host);
-                      //   let data = json!({
-                      //       "room_name": env::var("ROOM_NAME").unwrap_or("none".to_string())
-                      //   });
-                      //   let auth_token = env::var("AUTH_TOKEN").unwrap_or("none".to_string());
-                      //   let response = client
-                      //     .post(&url)
-                      //     .json(&data)
-                      //     .header("Authorization", format!("Bearer {}", auth_token))
-                      //     .send()
-                      //     .await?; // Use await since this is within an async context
-                      //   println!("Response status code: {}", response.status());
-                      //   println!("Response body:\n{}", response.text().await?);
-                      // }
-
-                      // // Call the on_participant_left function  // for some reason this is not working
-                      // info!("participant left: {:?}", jid);
-
-                      // if let Some(f) = &self
-                      //   .inner
-                      //   .lock()
-                      //   .await
-                      //   .on_participant_left
-                      //   .as_ref()
-                      //   .cloned()
-                      // {
-                      //   debug!("calling on_participant_left with old participant");
-                      //   info!("calling on_participant_left with old participant");
-                      //   if let Err(e) = f(self.clone(), participant).await {
-                      //     info!("on_participant_left failed: {:?}", e);
-                      //     warn!("on_participant_left failed: {:?}", e);
-                      //   }
-                      // }
                     }
                     // if the presense type is not unavailable, then add the participant
                     else if self
