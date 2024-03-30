@@ -1,7 +1,7 @@
 use std::env;
 use std::{collections::HashMap, time::Duration};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context, Ok, Result};
 #[cfg(target_os = "macos")]
 use cocoa::appkit::NSApplication;
 use colibri::{ColibriMessage, Constraints, VideoType};
@@ -496,6 +496,7 @@ async fn main_inner() -> Result<()> {
       info!("Random Random Random");
       Box::pin(async move {
         info!("Random Random Random Random");
+        Ok(());
       })
     })
     .await;
