@@ -507,6 +507,7 @@ impl JitsiConference {
     &self,
     f: impl (Fn(JitsiConference, Participant) -> BoxedResultFuture) + Send + Sync + 'static,
   ) {
+    info!("We here");
     self.inner.lock().await.on_participant_left = Some(Arc::new(f));
   }
 

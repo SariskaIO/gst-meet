@@ -493,6 +493,7 @@ async fn main_inner() -> Result<()> {
 
   conference
     .on_participant_left(move |_conference, participant| {
+      info!("Random Random Random");
       Box::pin(async move {
         // Attempt to retrieve the remote participant's video sink element when they leave
         if let Some(video_sink_element) = _conference.remote_participant_video_sink_element().await
