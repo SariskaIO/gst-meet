@@ -491,12 +491,12 @@ async fn main_inner() -> Result<()> {
     })
     .await;
 
-  conference
+    conference
     .on_participant_left(move |_conference, participant| {
-      info!("Random Random Random");
+      info!("Participant left 1 : {:?}", participant);
       Box::pin(async move {
-        info!("Random Random Random Random");
-        Ok(());
+        info!("Participant left 2 : {:?}", participant);
+        Ok(())
       })
     })
     .await;
