@@ -1,7 +1,7 @@
 use std::env;
 use std::{collections::HashMap, time::Duration};
 
-use anyhow::{bail, Context, Ok, Result};
+use anyhow::{bail, Context, Result};
 #[cfg(target_os = "macos")]
 use cocoa::appkit::NSApplication;
 use colibri::{ColibriMessage, Constraints, VideoType};
@@ -493,9 +493,8 @@ async fn main_inner() -> Result<()> {
 
     conference
     .on_participant_left(move |_conference, participant| {
-      info!("Participant left 1 : {:?}", participant);
       Box::pin(async move {
-        info!("Participant left 2 : {:?}", participant);
+        info!("Random Random Random Random: {:?}", participant);
         Ok(())
       })
     })
