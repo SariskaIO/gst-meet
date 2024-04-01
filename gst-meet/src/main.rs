@@ -496,7 +496,7 @@ async fn main_inner() -> Result<()> {
       Box::pin(async move {
         info!("Random Random Random Random: {:?}", participant);
         let participantId = participant.jid.clone();
-        info!(info!("Random Random Random Random2: {:?}", participant));
+        info!("Random Random Random Random: {:?}", participantId);
         Ok(())
       })
     })
