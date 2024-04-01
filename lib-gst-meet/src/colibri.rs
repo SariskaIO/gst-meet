@@ -61,8 +61,7 @@ impl ColibriChannel {
             warn!("Failed to connect Colibri WebSocket, will retry: {:?}", e);
             sleep(CONNECT_RETRY_SLEEP).await;
             retries += 1;
-          }
-          else {
+          } else {
             return Err(e).context("Failed to connect Colibri WebSocket");
           }
         },

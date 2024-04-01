@@ -375,7 +375,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -386,7 +386,8 @@ pub async fn start_recording(
         if codec == "H265" {
             location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
         }
-        gstreamer_pipeline = format!( "/usr/local/bin/gst-meet \
+        gstreamer_pipeline = format!(
+            "/usr/local/bin/gst-meet \
             --web-socket-url=wss://{}/api/v1/media/websocket \
             --xmpp-domain={} \
             --muc-domain={} \
@@ -394,14 +395,15 @@ pub async fn start_recording(
             --recv-video-scale-height=1280 \
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            compositor name=video sink_0::xpos=0 sink_1::xpos=720 sink_2::xpos=0 sink_2::ypos=640 sink_3::xpos=640 sink_3::ypos=1280 \
+            compositor name=video \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
             API_HOST,
             XMPP_DOMAIN,
             XMPP_MUC_DOMAIN,
             params.room_name,
-            location);
+            location
+        );
     }else if is_low_latency {
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
@@ -417,7 +419,7 @@ pub async fn start_recording(
             --recv-video-scale-height=720 \
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+            compositor name=video \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
             API_HOST,
@@ -451,7 +453,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -473,7 +475,7 @@ pub async fn start_recording(
         --recv-video-scale-width=640 \
         --recv-video-scale-height=360 \
         --room-name={} \
-        --recv-pipeline='compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
+        --recv-pipeline='compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
@@ -486,13 +488,14 @@ pub async fn start_recording(
         --recv-video-scale-width=640 \
         --recv-video-scale-height=360 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video sink_1::xpos=640 sink_2::xpos=0 sink_2::ypos=360 sink_3::xpos=640 sink_3::ypos=360 \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }
 
+    //
     let child = Command::new("sh")
     .arg("-c")
     .arg(gstreamer_pipeline)

@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt, net::SocketAddr};
 use anyhow::{anyhow, bail, Context, Result};
 use futures::stream::StreamExt;
 use glib::{Cast, ObjectExt, ToValue};
+use gstreamer::Pad;
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GObjectExtManualGst, GstBinExt, GstObjectExt, PadExt},
   Bin, Element, GhostPad,
@@ -23,6 +24,7 @@ use pem::Pem;
 use rand::random;
 use rcgen::{Certificate, CertificateParams, PKCS_ECDSA_P256_SHA256};
 use ring::digest::{digest, SHA256};
+use std::sync::{Arc, Mutex};
 use tokio::{net::lookup_host, runtime::Handle, sync::oneshot, task::JoinHandle};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
@@ -78,8 +80,7 @@ impl Codec {
   fn is_rtx(&self, rtx_pt: u8) -> bool {
     if let Some(pt) = self.rtx_pt {
       pt == rtx_pt
-    }
-    else {
+    } else {
       false
     }
   }
@@ -224,13 +225,11 @@ impl JingleSession {
       for hdrext in description.hdrexts.iter() {
         if hdrext.uri == RTP_HDREXT_SSRC_AUDIO_LEVEL {
           audio_hdrext_ssrc_audio_level = Some(hdrext.id);
-        }
-        else if hdrext.uri == RTP_HDREXT_TRANSPORT_CC {
+        } else if hdrext.uri == RTP_HDREXT_TRANSPORT_CC {
           audio_hdrext_transport_cc = Some(hdrext.id);
         }
       }
-    }
-    else if description.media == "video" {
+    } else if description.media == "video" {
       for pt in description.payload_types.iter() {
         // We don’t support any static codec, so name MUST be set.
         if let Some(name) = &pt.name {
@@ -294,8 +293,7 @@ impl JingleSession {
           video_hdrext_transport_cc = Some(hdrext.id);
         }
       }
-    }
-    else {
+    } else {
       debug!("skipping media: {}", description.media);
       return Ok(None);
     }
@@ -310,7 +308,6 @@ impl JingleSession {
         .owner
         .clone();
 
-      debug!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
       remote_ssrc_map.insert(
         ssrc.id,
         Source {
@@ -318,10 +315,10 @@ impl JingleSession {
           participant_id: participant_id_for_owner(owner)?,
           media_type: if description.media == "audio" {
             MediaType::Audio
-          }
-          else {
+          } else {
             MediaType::Video
           },
+          sink_name: None,
         },
       );
     }
@@ -356,8 +353,7 @@ impl JingleSession {
       ))
       .await?
       .next()
-    }
-    else {
+    } else {
       None
     };
     debug!("STUN address: {:?}", stun_addr);
@@ -472,7 +468,6 @@ impl JingleSession {
     let mut audio_hdrext_ssrc_audio_level = None;
     let mut audio_hdrext_transport_cc = None;
     let mut video_hdrext_transport_cc = None;
-
     let mut remote_ssrc_map = HashMap::new();
 
     for content in &jingle.contents {
@@ -517,7 +512,10 @@ impl JingleSession {
     let fingerprint_str =
       itertools::join(fingerprint.iter().map(|byte| format!("{:X}", byte)), ":");
     let dtls_cert_pem = pem::encode(&Pem::new("CERTIFICATE", dtls_cert_der));
-    let dtls_private_key_pem = pem::encode(&Pem::new("PRIVATE KEY", dtls_cert.serialize_private_key_der()));
+    let dtls_private_key_pem = pem::encode(&Pem::new(
+      "PRIVATE KEY",
+      dtls_cert.serialize_private_key_der(),
+    ));
     debug!("Local DTLS certificate:\n{}", dtls_cert_pem);
     debug!("Local DTLS fingerprint: {}", fingerprint_str);
 
@@ -600,8 +598,7 @@ impl JingleSession {
                 if let Some(hdrext) = audio_hdrext_transport_cc {
                   caps = caps.field(&format!("extmap-{}", hdrext), RTP_HDREXT_TRANSPORT_CC);
                 }
-              }
-              else {
+              } else {
                 // A video codec, as the only audio codec we support is Opus.
                 caps = caps
                   .field("media", "video")
@@ -613,8 +610,7 @@ impl JingleSession {
                 }
               }
               return Ok::<_, anyhow::Error>(Some(caps.build()));
-            }
-            else if codec.is_rtx(pt) {
+            } else if codec.is_rtx(pt) {
               caps = caps
                 .field("media", "video")
                 .field("clock-rate", 90000)
@@ -649,7 +645,9 @@ impl JingleSession {
       let jingle_session = jingle_session.clone();
       let f = move || {
         let rtpjitterbuffer: gstreamer::Element = values[1].get()?;
+        debug!("rtp JitterBuffer {:?}", rtpjitterbuffer);
         let session: u32 = values[2].get()?;
+        debug!("rtp session {:?}", session);
         let ssrc: u32 = values[3].get()?;
         debug!(
           "new jitterbuffer created for session {} ssrc {}",
@@ -665,7 +663,7 @@ impl JingleSession {
               .context("not connected (no jingle session)")?
               .remote_ssrc_map
               .get(&ssrc)
-              .context(format!("unknown ssrc: {}", ssrc))?
+              .context(format!("unknown ssrc s: {}", ssrc))?
               .clone(),
           )
         })?;
@@ -787,7 +785,7 @@ impl JingleSession {
             let mut parts = pad_name.split('_').skip(4);
             let ssrc: u32 = parts.next().context("malformed pad name")?.parse()?;
             let pt: u8 = parts.next().context("malformed pad name")?.parse()?;
-            let source = handle.block_on(async {
+            let mut source = handle.block_on(async {
               Ok::<_, anyhow::Error>(
                 conference
                   .jingle_session
@@ -797,12 +795,10 @@ impl JingleSession {
                   .context("not connected (no jingle session)")?
                   .remote_ssrc_map
                   .get(&ssrc)
-                  .context(format!("unknown ssrc: {}", ssrc))?
+                  .context(format!("unknown ssrc 22: {}", ssrc))?
                   .clone(),
               )
             })?;
-
-            debug!("pad added for remote source: {:?}", source);
 
             let depayloader = match source.media_type {
               MediaType::Audio => {
@@ -812,8 +808,7 @@ impl JingleSession {
                   .find(|codec| codec.is(pt));
                 if let Some(codec) = codec {
                   gstreamer::ElementFactory::make(codec.depayloader_name()).build()?
-                }
-                else {
+                } else {
                   bail!("received audio with unsupported PT {}", pt);
                 }
               },
@@ -824,8 +819,7 @@ impl JingleSession {
                   .find(|codec| codec.is(pt));
                 if let Some(codec) = codec {
                   gstreamer::ElementFactory::make(codec.depayloader_name()).build()?
-                }
-                else {
+                } else {
                   bail!("received video with unsupported PT {}", pt);
                 }
               },
@@ -882,8 +876,7 @@ impl JingleSession {
                 if let Some(codec) = codec {
                   gstreamer::ElementFactory::make(codec.decoder_name()).build()?
                   // TODO: fec
-                }
-                else {
+                } else {
                   bail!("received audio with unsupported PT {}", pt);
                 }
               },
@@ -900,8 +893,7 @@ impl JingleSession {
                     "GST_VIDEO_DECODER_REQUEST_SYNC_POINT_CORRUPT_OUTPUT",
                   );
                   decoder
-                }
-                else {
+                } else {
                   bail!("received video with unsupported PT {}", pt);
                 }
               },
@@ -972,9 +964,82 @@ impl JingleSession {
                 },
               };
               if let Some(sink_element) = maybe_sink_element {
+                // Get the sink pad from the sink element
+
                 let sink_pad = sink_element
                   .request_pad_simple("sink_%u")
                   .context("no suitable sink pad provided by sink element in recv pipeline")?;
+
+                let sink_pad_name = sink_pad.name().to_string();
+
+                match source.media_type {
+                  MediaType::Audio => {
+                    // Do noting
+                  },
+                  MediaType::Video => {
+                    let pad_length = sink_element.pads().clone().len() - 1;
+                    let pad_vector = sink_element.pads();
+
+                    let filtered_vector: Vec<Pad> = pad_vector
+                      .iter()
+                      .filter(|&pad| pad.name().to_string() != "src")
+                      .cloned()
+                      .collect();
+
+                    let mut num = 0;
+
+                    for element in filtered_vector {
+                      let some = element.name().to_string();
+                      let row = num / 2;
+                      let col = num % 2;
+                      let xpos =
+                        col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                      let ypos =
+                        row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                      element.set_property(
+                        "width",
+                        conference.config.recv_video_scale_width.clone() as i32,
+                      );
+                      element.set_property(
+                        "height",
+                        conference.config.recv_video_scale_height.clone() as i32,
+                      );
+                      element.set_property("xpos", xpos);
+                      element.set_property("ypos", ypos);
+                      num = num + 1;
+                    }
+                  },
+                }
+
+                // Set the sink name on the source
+
+                let mut random_map = handle.block_on(async {
+                  // Use handle.block_on to wait for the lock and access remote_ssrc_map
+                  let mut jingle_session_guard = conference.jingle_session.lock().await;
+
+                  // Use a mutable reference to directly access remote_ssrc_map
+                  let remote_ssrc_map = &mut jingle_session_guard
+                    .as_mut()
+                    .context("not connected (no jingle session)")?
+                    .remote_ssrc_map;
+
+                  // Print the remote_ssrc_map before accessing the Source
+                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+
+                  // Use the remote_ssrc_map directly without cloning
+                  if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
+                    // Modify the source directly
+                    source.sink_name = Some(sink_pad_name.clone());
+                  } else {
+                    bail!("unknown ssrc: {}", ssrc);
+                  }
+
+                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+                  // Return the remote_ssrc_map
+                  Ok::<_, anyhow::Error>(remote_ssrc_map.clone())
+                });
+
+                // Create a ghost pad for the sink pad and add it to the bin
                 let ghost_pad = GhostPad::with_target(
                   Some(&format!(
                     "participant_{}_{:?}_{}",
@@ -982,6 +1047,10 @@ impl JingleSession {
                   )),
                   &sink_pad,
                 )?;
+
+                // TODO: set caps on ghost pad
+                source.sink_name = Some(sink_pad_name.clone());
+                // Get the pad of the bin
                 let bin: Bin = sink_element
                   .parent()
                   .context("sink element has no parent")?
@@ -989,14 +1058,16 @@ impl JingleSession {
                   .map_err(|_| anyhow!("sink element's parent is not a bin"))?;
                 bin.add_pad(&ghost_pad)?;
 
+                // Link the decoder to the ghost pad
                 src_pad
                   .link(&ghost_pad)
                   .context("failed to link decode chain to participant bin from recv pipeline")?;
                 info!(
-                  "linked {}/{:?} to new pad in recv pipeline",
+                  "linked {}/{:?} to new pad in recv pipeline for all",
                   participant_id, source.media_type
                 );
               }
+              // This is for when we have recv participant pipelines per participant
               else if let Some(participant_bin) =
                 pipeline.by_name(&format!("participant_{}", participant_id))
               {
@@ -1012,19 +1083,16 @@ impl JingleSession {
                     "linked {}/{:?} to recv participant pipeline",
                     participant_id, source.media_type
                   );
-                }
-                else {
+                } else {
                   warn!(
                     "no {} sink pad on {} participant bin in recv participant pipeline",
                     sink_pad_name, participant_id
                   );
                 }
-              }
-              else {
+              } else {
                 warn!("no pipeline handled new participant: {}", participant_id);
               }
-            }
-            else {
+            } else {
               debug!("not looking for participant bin, source is owned by JVB");
             }
 
@@ -1046,8 +1114,7 @@ impl JingleSession {
             );
 
             Ok::<_, anyhow::Error>(())
-          }
-          else {
+          } else {
             Ok(())
           }
         };
@@ -1063,8 +1130,7 @@ impl JingleSession {
       let audio_sink_element = gstreamer::ElementFactory::make(opus.payloader_name()).build()?;
       audio_sink_element.set_property("pt", opus.pt as u32);
       audio_sink_element
-    }
-    else {
+    } else {
       bail!("no opus payload type in jingle session-initiate");
     };
     audio_sink_element.set_property("min-ptime", 10i64 * 1000 * 1000);
@@ -1092,8 +1158,7 @@ impl JingleSession {
           },
         }
       });
-    }
-    else {
+    } else {
       debug!("audio payloader: no rtp header extension support");
     }
     pipeline.add(&audio_sink_element)?;
@@ -1105,13 +1170,11 @@ impl JingleSession {
       element.set_property("pt", codec.pt as u32);
       if codec.name == CodecName::H264 {
         element.set_property_from_str("aggregate-mode", "zero-latency");
-      }
-      else {
+      } else {
         element.set_property_from_str("picture-id-mode", "15-bit");
       }
       element
-    }
-    else {
+    } else {
       bail!("unsupported video codec: {}", codec_name);
     };
     video_sink_element.set_property("ssrc", video_ssrc);
@@ -1138,8 +1201,7 @@ impl JingleSession {
           },
         }
       });
-    }
-    else {
+    } else {
       debug!("video payloader: no rtp header extension support");
     }
     pipeline.add(&video_sink_element)?;
@@ -1249,7 +1311,7 @@ impl JingleSession {
     let bus = pipeline.bus().context("failed to get pipeline bus")?;
 
     let (pipeline_state_null_tx, pipeline_state_null_rx) = oneshot::channel();
-    
+
     tokio::spawn(async move {
       let mut stream = bus.stream();
       while let Some(msg) = stream.next().await {
@@ -1267,8 +1329,16 @@ impl JingleSession {
           gstreamer::MessageView::StateChanged(state)
             if state.current() == gstreamer::State::Null =>
           {
-            debug!("pipeline state is null");
-            pipeline_state_null_tx.send(()).unwrap();
+            info!("pipeline state is null");
+            match pipeline_state_null_tx.send(()) {
+              Ok(_) => {
+                // Successfully sent the message
+              },
+              Err(err) => {
+                error!("Error sending message: {:?}", err);
+                // Handle the error case appropriately
+              },
+            }
             break;
           },
           _ => {},
@@ -1305,12 +1375,10 @@ impl JingleSession {
           let mut pt = PayloadType::new(codec.pt, "opus".to_owned(), 48000, 2);
           pt.rtcp_fbs = codec.rtcp_fbs.clone();
           vec![pt]
-        }
-        else {
+        } else {
           bail!("no opus payload type in jingle session-initiate");
         }
-      }
-      else {
+      } else {
         let mut pts = vec![];
         let codec_name = conference.config.video_codec.as_str();
         let codec = codecs.iter().find(|codec| codec.is_codec(codec_name));
@@ -1332,8 +1400,7 @@ impl JingleSession {
               .collect();
             pts.push(rtx_pt);
           }
-        }
-        else {
+        } else {
           bail!("unsupported video codec: {}", codec_name);
         }
         pts
@@ -1347,15 +1414,13 @@ impl JingleSession {
 
       description.ssrc = Some(if initiate_content.name.0 == "audio" {
         audio_ssrc.to_string()
-      }
-      else {
+      } else {
         video_ssrc.to_string()
       });
 
       description.ssrcs = if initiate_content.name.0 == "audio" {
         vec![jingle_ssma::Source::new(audio_ssrc)]
-      }
-      else {
+      } else {
         vec![
           jingle_ssma::Source::new(video_ssrc),
           jingle_ssma::Source::new(video_rtx_ssrc),
@@ -1375,8 +1440,7 @@ impl JingleSession {
 
       description.ssrc_groups = if initiate_content.name.0 == "audio" {
         vec![]
-      }
-      else {
+      } else {
         vec![jingle_ssma::Group {
           semantics: Semantics::Fid,
           sources: vec![
@@ -1398,8 +1462,7 @@ impl JingleSession {
             .hdrexts
             .push(RtpHdrext::new(hdrext, RTP_HDREXT_TRANSPORT_CC.to_owned()));
         }
-      }
-      else if initiate_content.name.0 == "video" {
+      } else if initiate_content.name.0 == "video" {
         if let Some(hdrext) = video_hdrext_transport_cc {
           description
             .hdrexts
@@ -1485,7 +1548,6 @@ impl JingleSession {
             .owner
             .clone();
 
-          debug!("adding ssrc to remote_ssrc_map: {:?}", ssrc);
           self.remote_ssrc_map.insert(
             ssrc.id,
             Source {
@@ -1493,10 +1555,10 @@ impl JingleSession {
               participant_id: participant_id_for_owner(owner)?,
               media_type: if description.media == "audio" {
                 MediaType::Audio
-              }
-              else {
+              } else {
                 MediaType::Video
               },
+              sink_name: None,
             },
           );
         }
@@ -1532,19 +1594,15 @@ fn dump_pads(element: &Element) -> String {
 fn participant_id_for_owner(owner: String) -> Result<Option<String>> {
   if owner == "jvb" {
     Ok(None)
-  }
-  else {
-    Ok(Some(
-      if owner.contains('/') {
-        owner
-          .split('/')
-          .nth(1)
-          .context("invalid ssrc-info owner")?
-          .to_owned()
-      }
-      else {
-        owner
-      }
-    ))
+  } else {
+    Ok(Some(if owner.contains('/') {
+      owner
+        .split('/')
+        .nth(1)
+        .context("invalid ssrc-info owner")?
+        .to_owned()
+    } else {
+      owner
+    }))
   }
 }

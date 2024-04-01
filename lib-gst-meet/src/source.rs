@@ -3,6 +3,7 @@ pub(crate) struct Source {
   pub(crate) ssrc: u32,
   pub(crate) participant_id: Option<String>,
   pub(crate) media_type: MediaType,
+  pub(crate) sink_name: Option<String>
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
