@@ -495,9 +495,10 @@ async fn main_inner() -> Result<()> {
     .on_participant_left(move |_conference, participant| {
       Box::pin(async move {
         info!("Random Random Random Random: {:?}", participant);
-        let participantId = participant.jid.unwrap_or_default().node.clone().unwrap_or_default().to_string();
-        info!("Random Random Random Random: {:?}", participantId);
-        conference.rearrange_participant_grid(participantId);
+        let Some(participantjId) = participant.jid;
+        let Some(id) = participantjId.node;
+        info!("Random Random Random Random: {:?}", participantjId);
+        conference.rearrange_participant_grid(id);
         Ok(())
       })
     })
