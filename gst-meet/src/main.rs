@@ -497,6 +497,7 @@ async fn main_inner() -> Result<()> {
         info!("Random Random Random Random: {:?}", participant);
         let participantId = participant.jid.clone();
         info!("Random Random Random Random: {:?}", participantId);
+        conference.rearrange_participant_grid(participantId);
         Ok(())
       })
     })
