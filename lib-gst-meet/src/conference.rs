@@ -510,7 +510,7 @@ impl JitsiConference {
     self.inner.lock().await.on_participant_left = Some(Arc::new(f));
   }
 
-  pub fn rearrange_participant_grid(&self, participantId: String){
+  pub async fn rearrange_participant_grid(&self, participantId: String){
     info!("We hreeeraere");
     if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
       let mut map = jingle_session.remote_ssrc_map.clone();
