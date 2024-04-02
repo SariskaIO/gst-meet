@@ -980,9 +980,12 @@ impl StanzaFilter for JitsiConference {
 
                         let participantId = jid.node.clone().unwrap_or_default().to_string();
                         if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
-                          let mut map = jingle_session.remote_ssrc_map.clone();
+                          let mut map = &jingle_session.remote_ssrc_map;
                           let mut sink_pad_name = "sdads";
+                          info!("Map: {:?}", map);
                           for source in map.values().filter(|source| {
+                            
+                            info!("Source: {:?}", source);
                             if let Some(participant_id) = &source.participant_id {
                               *participant_id == participantId
                             } else {
@@ -1036,7 +1039,7 @@ impl StanzaFilter for JitsiConference {
                           element.set_property("ypos", ypos);
                           num = num + 1;
                         }  
-                        
+
                         info!("calling on_participant_left with old participant");
                         if let Err(e) = f(self.clone(), participant).await {
                           info!("on_participant_left failed: {:?}", e);
