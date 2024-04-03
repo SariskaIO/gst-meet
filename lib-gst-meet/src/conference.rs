@@ -977,12 +977,11 @@ impl StanzaFilter for JitsiConference {
                         map.retain(|_key, source| {
                           if let Some(participant_id) = &source.participant_id {
                               if *participant_id == participantId {
-                                if let Some(sink_name) = &source.sink_name {
-                                  sink_pad_name = sink_name;
+                                if let Some(sink_name) = source.sink_name {
+                                  sink_pad_name = &sink_name;
                                 }
                                   false // Remove this entry from the map
                               } else {
-                                  // If participant_id doesn't match participantId, keep the entry
                                   true
                               }
                           } else {
