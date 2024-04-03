@@ -978,7 +978,7 @@ impl StanzaFilter for JitsiConference {
                           if let Some(participant_id) = &source.participant_id {
                               if *participant_id == participantId {
                                 if let Some(sink_name) = source.sink_name {
-                                  sink_pad_name = &sink_name;
+                                  *sink_pad_name = sink_name.clone();
                                 }
                                   false // Remove this entry from the map
                               } else {
