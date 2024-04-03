@@ -1017,6 +1017,7 @@ impl StanzaFilter for JitsiConference {
 
                       let mut num = 0;
                       for element in filtered_vector {
+                        info!("Grid Rearranging due to participant left");
                         let some = element.name().to_string();
                         let row = num / 2;
                         let col = num % 2;
