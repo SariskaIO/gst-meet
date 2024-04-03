@@ -1000,36 +1000,37 @@ impl StanzaFilter for JitsiConference {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             compositor.release_request_pad(&result_element_pad_1);
                             compositor.sync_state_with_parent();
+                            let pad_vector = self
+                            .remote_participant_video_sink_element()
+                            .await
+                            .unwrap()
+                            .pads();
+    
+                          // filter out just the video sink pads
+                          let filtered_vector: Vec<Pad> = pad_vector
+                            .iter()
+                            .filter(|&pad| pad.name().to_string() != "src")
+                            .cloned()
+                            .collect();
+    
+                          let mut num = 0;
+                          for element in filtered_vector {
+                            info!("Grid Rearranging due to participant left");
+                            let some = element.name().to_string();
+                            let row = num / 2;
+                            let col = num % 2;
+                            let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
+                            let ypos =
+                              row as i32 * (self.config.clone().recv_video_scale_height as i32);
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
+                            num = num + 1;
+                          }
                           }
                         }
                       }
 
-                      let pad_vector = self
-                        .remote_participant_video_sink_element()
-                        .await
-                        .unwrap()
-                        .pads();
-
-                      // filter out just the video sink pads
-                      let filtered_vector: Vec<Pad> = pad_vector
-                        .iter()
-                        .filter(|&pad| pad.name().to_string() != "src")
-                        .cloned()
-                        .collect();
-
-                      let mut num = 0;
-                      for element in filtered_vector {
-                        info!("Grid Rearranging due to participant left");
-                        let some = element.name().to_string();
-                        let row = num / 2;
-                        let col = num % 2;
-                        let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                        let ypos =
-                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
-                        element.set_property("xpos", xpos);
-                        element.set_property("ypos", ypos);
-                        num = num + 1;
-                      }
+                    
 
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
