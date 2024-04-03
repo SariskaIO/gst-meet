@@ -973,8 +973,10 @@ impl StanzaFilter for JitsiConference {
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
                         let mut map = &jingle_session.remote_ssrc_map;
                         let mut sink_pad_name = "sdads";
+
                         for source in map.values().filter(|source| {
                           if let Some(participant_id) = &source.participant_id {
+                            info!("Printing the correct source: {:?}", source);
                             *participant_id == participantId
                           } else {
                             println!("participant_id is None");
