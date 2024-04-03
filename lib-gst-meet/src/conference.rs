@@ -970,8 +970,8 @@ impl StanzaFilter for JitsiConference {
                     {
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
                       info!("Participant Left here: {:?}", participantId);
-                      if let Some(mut jingle_session) = self.jingle_session.lock().await.as_ref() {
-                        let mut map = &mut jingle_session.remote_ssrc_map;
+                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
+                        let mut map = &jingle_session.remote_ssrc_map;
                         let mut sink_pad_name = "sdads";
 
                         map.retain(|_key, source| {
