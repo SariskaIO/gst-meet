@@ -1023,9 +1023,6 @@ impl JingleSession {
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
 
-                  // Print the remote_ssrc_map before accessing the Source
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-
                   // Use the remote_ssrc_map directly without cloning
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     // Modify the source directly
@@ -1033,8 +1030,7 @@ impl JingleSession {
                   } else {
                     bail!("unknown ssrc: {}", ssrc);
                   }
-
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
+                  
                   // Return the remote_ssrc_map
                   Ok::<_, anyhow::Error>(remote_ssrc_map.clone())
                 });

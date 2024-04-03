@@ -993,7 +993,7 @@ impl StanzaFilter for JitsiConference {
                           .static_pad(sink_pad_name);
 
                         let number_of_participants = self.inner.lock().await.participants.len();
-
+                        info!("Number of participants: {:?}", self.number_of_participants);
                         if let Some(compositor) = jingle_session.pipeline().by_name("video") {
                           if let Some(result_element_pad_1) = result_element_pad_1 {
                             compositor.release_request_pad(&result_element_pad_1);
@@ -1001,6 +1001,8 @@ impl StanzaFilter for JitsiConference {
                           }
                         }
                       }
+
+                      info!("Number of video sinks: {:?}", self.remote_participant_video_sink_element.len());
 
                       let pad_vector = self
                         .remote_participant_video_sink_element()
