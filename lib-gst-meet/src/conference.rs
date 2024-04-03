@@ -974,20 +974,38 @@ impl StanzaFilter for JitsiConference {
                         let mut map = &jingle_session.remote_ssrc_map;
                         let mut sink_pad_name = "sdads";
 
-                        for source in map.values().filter(|source| {
+                        map.retain(|_key, source| {
                           if let Some(participant_id) = &source.participant_id {
-                            info!("Printing the correct source: {:?}", source);
-                            map.remove(source);
-                            *participant_id == participantId;
+                              if *participant_id == participantId {
+                                if let Some(sink_name) = &source.sink_name {
+                                  sink_pad_name = sink_name;
+                                  }
+                                  false // Remove this entry from the map
+                              } else {
+                                  // If participant_id doesn't match participantId, keep the entry
+                                  
+                                  true
+                              }
                           } else {
-                            println!("participant_id is None");
-                            false
+                              println!("participant_id is None");
+                              true // Keep this entry in the map
                           }
-                        }) {
-                          if let Some(sink_name) = &source.sink_name {
-                            sink_pad_name = sink_name;
-                          }
-                        }
+                      });
+
+                        // for source in map.values().filter(|source| {
+                        //   if let Some(participant_id) = &source.participant_id {
+                        //     info!("Printing the correct source: {:?}", source);
+                        //     map.remove(source);
+                        //     *participant_id == participantId;
+                        //   } else {
+                        //     println!("participant_id is None");
+                        //     false
+                        //   }
+                        // }) {
+                        //   if let Some(sink_name) = &source.sink_name {
+                        //     sink_pad_name = sink_name;
+                        //   }
+                        // }
 
                         info!("Sink Pad NAme to be removed {:?}", sink_pad_name);
 
