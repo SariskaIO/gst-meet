@@ -986,10 +986,7 @@ impl StanzaFilter for JitsiConference {
                                   .await
                                   .unwrap()
                                   .static_pad(sink_padname);
-
-                                let number_of_participants =
-                                  self.inner.lock().await.participants.len();
-                                info!("Number of participants: {:?}", number_of_participants);
+                                
                                 if let Some(compositor) = jingle_session.pipeline().by_name("video")
                                 {
                                   if let Some(result_element_pad_1) = result_element_pad_1 {
