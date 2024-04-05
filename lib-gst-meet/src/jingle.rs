@@ -921,6 +921,8 @@ impl JingleSession {
                   .link(&videoscale)
                   .context("failed to link decoder to videoscale")?;
 
+                info!("Random Random Random");
+
                 let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
                 capsfilter.set_property_from_str(
                   "caps",
