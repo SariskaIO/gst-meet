@@ -921,20 +921,23 @@ impl JingleSession {
                   .link(&videoscale)
                   .context("failed to link decoder to videoscale")?;
 
-                let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?; 
+                let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
-                    "video/x-raw, width={}, height={}, crop-rect={},{},{},{}, pad-rect={},{},{},{}",
-                    conference.config.recv_video_scale_width+180 + 180,
-                    conference.config.recv_video_scale_height,
-                    0,
-                    200,
-                    360,
-                    400,
-                    180, 0, 180, 0
+                      "video/x-raw, width={}, height={}, crop-x={}, crop-y={}, crop-width={}, crop-height={}, left-padding={}, right-padding={}, top-padding={}, bottom-padding={}",
+                      conference.config.recv_video_scale_width,
+                      conference.config.recv_video_scale_height,
+                      0,
+                      200,
+                      360,
+                      400,
+                      50,
+                      50,
+                      50,
+                      50
                   ),
-                );
+              );
                 pipeline
                   .add(&capsfilter)
                   .context("failed to add capsfilter to pipeline")?;
