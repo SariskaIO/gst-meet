@@ -1009,7 +1009,6 @@ impl JingleSession {
                         );
                         element.set_property("xpos", xpos);
                         element.set_property("ypos", ypos);
-                        element.set_property(crop, &true);
                         num = num + 1;
                         continue;
                       }
