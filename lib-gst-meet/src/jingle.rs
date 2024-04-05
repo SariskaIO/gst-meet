@@ -925,9 +925,13 @@ impl JingleSession {
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
-                    "video/x-raw, width={}, height={}",
+                    "video/x-raw, width={}, height={}, crop-x={}, crop-y={}, crop-width={}, crop-height={}",
                     conference.config.recv_video_scale_width,
-                    conference.config.recv_video_scale_height
+                    conference.config.recv_video_scale_height,
+                    0,
+                    200,
+                    360,
+                    400
                   ),
                 );
                 pipeline
