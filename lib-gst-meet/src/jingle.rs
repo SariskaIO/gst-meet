@@ -913,6 +913,10 @@ impl JingleSession {
                 .context("decoder has no src pad")?,
               MediaType::Video => {
                 let videoscale = gstreamer::ElementFactory::make("videoscale").build()?;
+                videoscale.set_property_from_str(
+                  "add-borders",
+                  &true.to_string(),
+              );
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;
