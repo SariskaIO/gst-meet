@@ -924,8 +924,6 @@ impl JingleSession {
 
                 let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
 
-
-
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
