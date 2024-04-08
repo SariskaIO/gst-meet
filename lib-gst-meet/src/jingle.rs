@@ -989,15 +989,61 @@ impl JingleSession {
 
                     let mut num = 0;
 
+                    // for element in filtered_vector {
+                    //   let some = element.name().to_string();
+                    //   let (row, col) = if conference.config.recv_video_scale_width.clone()
+                    //     < conference.config.recv_video_scale_height.clone()
+                    //   {
+                    //     (num % 2, num / 2)
+                    //   } else {
+                    //     (num / 2, num % 2)
+                    //   };
+                    //   let xpos =
+                    //     col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                    //   let ypos =
+                    //     row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                    //   element.set_property(
+                    //     "width",
+                    //     conference.config.recv_video_scale_width.clone() as i32,
+                    //   );
+
+                    //   info!("X Position for Element: {:?} ", xpos);
+                    //   info!("Y Position for Element: {:?}", ypos);
+                    //   element.set_property(
+                    //     "height",
+                    //     conference.config.recv_video_scale_height.clone() as i32,
+                    //   );
+                    //   element.set_property("xpos", xpos);
+                    //   element.set_property("ypos", ypos);
+                    //   num = num + 1;
+                    // }
+                  
                     for element in filtered_vector {
                       let some = element.name().to_string();
-                      let (row, col) = if conference.config.recv_video_scale_width.clone()
-                        < conference.config.recv_video_scale_height.clone()
+                      if (conference.config.recv_video_scale_width.clone()
+                        < conference.config.recv_video_scale_height.clone())
                       {
-                        (num % 2, num / 2)
-                      } else {
-                        (num / 2, num % 2)
-                      };
+                        let row = num % 2;
+                        let col = num / 2;
+                        let xpos =
+                          col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                        let ypos =
+                          row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                        element.set_property(
+                          "width",
+                          conference.config.recv_video_scale_width.clone() as i32,
+                        );
+                        element.set_property(
+                          "height",
+                          conference.config.recv_video_scale_height.clone() as i32,
+                        );
+                        element.set_property("xpos", xpos);
+                        element.set_property("ypos", ypos);
+                        num = num + 1;
+                        continue;
+                      }
+                      let row = num / 2;
+                      let col = num % 2;
                       let xpos =
                         col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
                       let ypos =
@@ -1006,9 +1052,6 @@ impl JingleSession {
                         "width",
                         conference.config.recv_video_scale_width.clone() as i32,
                       );
-
-                      info!("X Position for Element: {:?} ", xpos);
-                      info!("Y Position for Element: {:?}", ypos);
                       element.set_property(
                         "height",
                         conference.config.recv_video_scale_height.clone() as i32,
@@ -1032,9 +1075,6 @@ impl JingleSession {
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
 
-                  // Print the remote_ssrc_map before accessing the Source
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-
                   // Use the remote_ssrc_map directly without cloning
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     // Modify the source directly
@@ -1042,9 +1082,6 @@ impl JingleSession {
                   } else {
                     bail!("unknown ssrc: {}", ssrc);
                   }
-
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-                  // Return the remote_ssrc_map
                   Ok::<_, anyhow::Error>(remote_ssrc_map.clone())
                 });
 
