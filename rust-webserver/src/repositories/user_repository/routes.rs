@@ -413,7 +413,6 @@ pub async fn start_recording(
         --recv-video-scale-height=640 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
-            ! videoscale ! video/x-raw,width=360,height=640
             ! x264enc \
             ! video/x-h264,profile=main \
             ! flvmux streamable=true name=mux \
