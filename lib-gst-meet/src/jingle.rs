@@ -917,8 +917,8 @@ impl JingleSession {
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;
-                videoscale.set_properties_from_str("width", "360");
-                videoscale.set_properties_from_str("height", "640");
+                videoscale.set_property_from_str("width", "360");
+                videoscale.set_property_from_str("height", "640");
                 videoscale.sync_state_with_parent()?;
                 decoder
                   .link(&videoscale)
@@ -991,61 +991,15 @@ impl JingleSession {
 
                     let mut num = 0;
 
-                    // for element in filtered_vector {
-                    //   let some = element.name().to_string();
-                    //   let (row, col) = if conference.config.recv_video_scale_width.clone()
-                    //     < conference.config.recv_video_scale_height.clone()
-                    //   {
-                    //     (num % 2, num / 2)
-                    //   } else {
-                    //     (num / 2, num % 2)
-                    //   };
-                    //   let xpos =
-                    //     col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                    //   let ypos =
-                    //     row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                    //   element.set_property(
-                    //     "width",
-                    //     conference.config.recv_video_scale_width.clone() as i32,
-                    //   );
-
-                    //   info!("X Position for Element: {:?} ", xpos);
-                    //   info!("Y Position for Element: {:?}", ypos);
-                    //   element.set_property(
-                    //     "height",
-                    //     conference.config.recv_video_scale_height.clone() as i32,
-                    //   );
-                    //   element.set_property("xpos", xpos);
-                    //   element.set_property("ypos", ypos);
-                    //   num = num + 1;
-                    // }
-                  
                     for element in filtered_vector {
                       let some = element.name().to_string();
-                      if (conference.config.recv_video_scale_width.clone()
-                        < conference.config.recv_video_scale_height.clone())
+                      let (row, col) = if conference.config.recv_video_scale_width.clone()
+                        < conference.config.recv_video_scale_height.clone()
                       {
-                        let row = num % 2;
-                        let col = num / 2;
-                        let xpos =
-                          col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                        let ypos =
-                          row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                        element.set_property(
-                          "width",
-                          conference.config.recv_video_scale_width.clone() as i32,
-                        );
-                        element.set_property(
-                          "height",
-                          conference.config.recv_video_scale_height.clone() as i32,
-                        );
-                        element.set_property("xpos", xpos);
-                        element.set_property("ypos", ypos);
-                        num = num + 1;
-                        continue;
-                      }
-                      let row = num / 2;
-                      let col = num % 2;
+                        (num % 2, num / 2)
+                      } else {
+                        (num / 2, num % 2)
+                      };
                       let xpos =
                         col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
                       let ypos =
@@ -1054,6 +1008,9 @@ impl JingleSession {
                         "width",
                         conference.config.recv_video_scale_width.clone() as i32,
                       );
+
+                      info!("X Position for Element: {:?} ", xpos);
+                      info!("Y Position for Element: {:?}", ypos);
                       element.set_property(
                         "height",
                         conference.config.recv_video_scale_height.clone() as i32,
