@@ -1007,8 +1007,8 @@ impl JingleSession {
                         conference.config.recv_video_scale_width.clone() as i32,
                       );
 
-                      info!("X Position for Element: ", xpos);
-                      info!("Y Position for Element: ", ypos);
+                      info!("X Position for Element: {:?} ", xpos);
+                      info!("Y Position for Element: {:?}", ypos);
                       element.set_property(
                         "height",
                         conference.config.recv_video_scale_height.clone() as i32,
