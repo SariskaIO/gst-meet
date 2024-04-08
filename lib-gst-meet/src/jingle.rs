@@ -916,7 +916,7 @@ impl JingleSession {
                 videoscale.set_property_from_str(
                   "add-borders",
                   &true.to_string(),
-              );
+                );
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;

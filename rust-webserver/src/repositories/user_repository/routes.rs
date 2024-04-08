@@ -413,10 +413,11 @@ pub async fn start_recording(
         --recv-video-scale-height=1280 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video \
-           ! x264enc \
-           ! video/x-h264,profile=main \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
+            ! videoscale ! video/x-raw,width=720,height=1280
+            ! x264enc \
+            ! video/x-h264,profile=main \
+            ! flvmux streamable=true name=mux \
+            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }else if is_low_latency {
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
