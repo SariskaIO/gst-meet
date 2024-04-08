@@ -917,6 +917,8 @@ impl JingleSession {
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;
+                videoscale.set_properties_from_str("width", "360");
+                videoscale.set_properties_from_str("height", "640");
                 videoscale.sync_state_with_parent()?;
                 decoder
                   .link(&videoscale)
