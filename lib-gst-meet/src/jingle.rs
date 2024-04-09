@@ -953,14 +953,6 @@ impl JingleSession {
                   .link(&videoconvert)
                   .context("failed to link capsfilter to videoconvert")?;
 
-                let videobox = gstreamer::ElementFactory::make("videobox")
-                  .build()?;
-                videobox.set_property_from_str("pattern", "black")
-                  .context("Failed to set videobox pattern");
-
-                videoconvert.link(&videobox)
-                  .context("Failed to link videoconvert to videobox");
-
                 videoconvert
                   .static_pad("src")
                   .context("videoconvert has no src pad")?
@@ -1002,35 +994,77 @@ impl JingleSession {
 
                     let mut num = 0;
 
-                    for element in filtered_vector {
-                      let some = element.name().to_string();
-                      let (row, col) = if conference.config.recv_video_scale_width.clone()
-                        < conference.config.recv_video_scale_height.clone()
-                      {
-                        (num % 2, num / 2)
-                      } else {
-                        (num / 2, num % 2)
-                      };
-                      let xpos =
-                        col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                      let ypos =
-                        row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                      element.set_property(
-                        "width",
-                        conference.config.recv_video_scale_width.clone() as i32,
-                      );
+                    let all_elements = filtered_vector.len();
 
-                      info!("X Position for Element: {:?} ", xpos);
-                      info!("Y Position for Element: {:?}", ypos);
-                      element.set_property(
-                        "height",
-                        conference.config.recv_video_scale_height.clone() as i32,
-                      );
-                      element.set_property("xpos", xpos);
-                      element.set_property("ypos", ypos);
-                      num = num + 1;
+                    for elemt in filtered_vector {
+                        if(num == 0){
+                          let xpos = 0 as i32;
+                          let ypos = 0 as i32;
+                          elemt.set_property(
+                            "width", 
+                            conference.config.recv_video_scale_width.clone() as i32);
+                          elemet.set_property(
+                            "height",
+                            conference.config.recv_video_scale_height.clone() as i32,
+                          );
+                          elemt.set_property("xpos", xpos);
+                          elemt.set_property("ypos", ypos);
+                        }
+
+                        if(num == 1){
+                          let xpos = 0 as i32;
+                          let ypos = (conference.config.recv_video_scale_height.clone()/2u16) as i32;
+                          elemt.set_property(
+                            "width", 
+                            (conference.config.recv_video_scale_width.clone()/2u16) as i32);
+                          elemet.set_property(
+                            "height",
+                            (conference.config.recv_video_scale_height.clone()/2u16) as i32,);
+                          elemt.set_property("xpos", xpos);
+                          elemt.set_property("ypos", ypos);
+                        }
+                        if(num == 2){
+                          let xpos = (conference.config.recv_video_scale_width.clone()/2u16) as i32;
+                          let ypos = (conference.config.recv_video_scale_height.clone()/2u16) as i32;
+                          elemt.set_property(
+                            "width", 
+                            (conference.config.recv_video_scale_width.clone()/2u16) as i32);
+                          elemet.set_property(
+                            "height",
+                            (conference.config.recv_video_scale_height.clone()/2u16) as i32,);
+                          elemt.set_property("xpos", xpos);
+                          elemt.set_property("ypos", ypos);
+                        }
+                        num = num + 1;
                     }
                   },
+
+                  //   for element in filtered_vector {
+                  //     let some = element.name().to_string();
+                  //     let (row, col) = if conference.config.recv_video_scale_width.clone()
+                  //       < conference.config.recv_video_scale_height.clone()
+                  //     {
+                  //       (num % 2, num / 2)
+                  //     } else {
+                  //       (num / 2, num % 2)
+                  //     };
+                  //     let xpos =
+                  //       col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                  //     let ypos =
+                  //       row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                  //     element.set_property(
+                  //       "width",
+                  //       conference.config.recv_video_scale_width.clone() as i32,
+                  //     );
+                  //     element.set_property(
+                  //       "height",
+                  //       conference.config.recv_video_scale_height.clone() as i32,
+                  //     );
+                  //     element.set_property("xpos", xpos);
+                  //     element.set_property("ypos", ypos);
+                  //     num = num + 1;
+                  //   }
+                  // },
                 }
 
                 // Set the sink name on the source
