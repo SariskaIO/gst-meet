@@ -957,10 +957,10 @@ impl JingleSession {
                   .build()
                   .expect("Failed to create videobox element");
 
-                videobox.set_property_from_str("pattern", "black")
-                  .expect("Failed to set videobox pattern");
-                videoconvert.link(&videobox)
-                .expect("Failed to link videoconvert to videobox");
+                videobox.set_property_from_str("pattern", "black");
+                videoconvert
+                .link(&videobox)
+                .context("failed to link videobox to videoconvert")?;
               },
             };
 
