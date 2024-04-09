@@ -954,9 +954,7 @@ impl JingleSession {
                   .context("failed to link capsfilter to videoconvert")?;
 
                 let videobox = gstreamer::ElementFactory::make("videobox")
-                  .build()
-                  .context("Failed to create videobox element");
-
+                  .build()?;
                 videobox.set_property_from_str("pattern", "black")
                   .context("Failed to set videobox pattern");
 
