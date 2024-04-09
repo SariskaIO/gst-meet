@@ -924,15 +924,12 @@ impl JingleSession {
 
                 let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
 
-
-
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
-                    "video/x-raw"
-                    // , width={}, height={}",
-                    // conference.config.recv_video_scale_width,
-                    // conference.config.recv_video_scale_height
+                    "video/x-raw" // , width={}, height={}",
+                                  // conference.config.recv_video_scale_width,
+                                  // conference.config.recv_video_scale_height
                   ),
                 );
                 pipeline
@@ -997,48 +994,55 @@ impl JingleSession {
                     let all_elements = filtered_vector.len();
 
                     for elemt in filtered_vector {
-                        if(num == 0){
-                          let xpos = 0 as i32;
-                          let ypos = 0 as i32;
-                          elemt.set_property(
-                            "width", 
-                            conference.config.recv_video_scale_width.clone() as i32);
-                          elemet.set_property(
-                            "height",
-                            conference.config.recv_video_scale_height.clone() as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
+                      if num == 0 {
+                        let xpos = 0 as i32;
+                        let ypos = 0 as i32;
+                        elemt.set_property(
+                          "width",
+                          conference.config.recv_video_scale_width.clone() as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          conference.config.recv_video_scale_height.clone() as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
 
-                        if(num == 1){
-                          let xpos = 0 as i32;
-                          let ypos = (conference.config.recv_video_scale_height.clone()/2u16) as i32;
-                          elemt.set_property(
-                            "width", 
-                            (conference.config.recv_video_scale_width.clone()/2u16) as i32);
-                          elemet.set_property(
-                            "height",
-                            (conference.config.recv_video_scale_height.clone()/2u16) as i32,);
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-                        if(num == 2){
-                          let xpos = (conference.config.recv_video_scale_width.clone()/2u16) as i32;
-                          let ypos = (conference.config.recv_video_scale_height.clone()/2u16) as i32;
-                          elemt.set_property(
-                            "width", 
-                            (conference.config.recv_video_scale_width.clone()/2u16) as i32);
-                          elemet.set_property(
-                            "height",
-                            (conference.config.recv_video_scale_height.clone()/2u16) as i32,);
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-                        num = num + 1;
+                      if num == 1 {
+                        let xpos = 0 as i32;
+                        let ypos =
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
+                      if num == 2 {
+                        let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                        let ypos =
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+                      num = num + 1;
                     }
                   },
-
                   //   for element in filtered_vector {
                   //     let some = element.name().to_string();
                   //     let (row, col) = if conference.config.recv_video_scale_width.clone()
