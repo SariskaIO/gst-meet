@@ -924,12 +924,15 @@ impl JingleSession {
 
                 let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
 
+
+
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
-                    "video/x-raw" // , width={}, height={}",
-                                  // conference.config.recv_video_scale_width,
-                                  // conference.config.recv_video_scale_height
+                    "video/x-raw"
+                    // , width={}, height={}",
+                    // conference.config.recv_video_scale_width,
+                    // conference.config.recv_video_scale_height
                   ),
                 );
                 pipeline
@@ -950,17 +953,19 @@ impl JingleSession {
                   .link(&videoconvert)
                   .context("failed to link capsfilter to videoconvert")?;
 
-                videoconvert
-                  .static_pad("src")
-                  .context("videoconvert has no src pad")?;
                 let videobox = gstreamer::ElementFactory::make("videobox")
                   .build()
-                  .expect("Failed to create videobox element");
+                  .context("Failed to create videobox element");
 
-                videobox.set_property_from_str("pattern", "black");
+                videobox.set_property_from_str("pattern", "black")
+                  .context("Failed to set videobox pattern");
+
+                videoconvert.link(&videobox)
+                  .context("Failed to link videoconvert to videobox");
+
                 videoconvert
-                .link(&videobox)
-                .context("failed to link videobox to videoconvert")?;
+                  .static_pad("src")
+                  .context("videoconvert has no src pad")?
               },
             };
 
