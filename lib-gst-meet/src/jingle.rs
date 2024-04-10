@@ -1009,6 +1009,21 @@ impl JingleSession {
                         elemt.set_property("ypos", ypos);
                       }
 
+                      if num == 0 && all_elements == 4{
+                        let xpos = 0 as i32;
+                        let ypos = 0 as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() /2u16)as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() /2u16)as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
                       if num == 1 {
                         let xpos = 0 as i32;
                         let ypos =
@@ -1029,6 +1044,21 @@ impl JingleSession {
                         let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
                         let ypos =
                           (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
+                      if num == 3{
+                        let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                        let ypos = 0 as i32;
                         elemt.set_property(
                           "width",
                           (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
