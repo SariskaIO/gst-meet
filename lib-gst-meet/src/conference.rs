@@ -990,8 +990,7 @@ impl StanzaFilter for JitsiConference {
                           }
                         });
 
-                        info!("Sink Pad Name: {:?}", sink_pad_name)
-
+                        info!("Sink Pad Name: {:?}", sink_pad_name);
 
                         // for source in map.values().filter(|source| {
                         //   if let Some(participant_id) = &source.participant_id {
@@ -1011,7 +1010,7 @@ impl StanzaFilter for JitsiConference {
                           .remote_participant_video_sink_element()
                           .await
                           .unwrap()
-                          .static_pad(sink_pad_name);
+                          .static_pad(sink_pad_name.as_str());
 
                         let number_of_participants = self.inner.lock().await.participants.len();
 
