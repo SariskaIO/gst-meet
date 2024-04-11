@@ -980,7 +980,8 @@ impl StanzaFilter for JitsiConference {
                                   true
                               } else {
                                 if let Some(sink_name) = &source.sink_name {
-                                    sink_pad_name.push_str(&sink_name);
+                                  let stringsinkname = sink_name.clone();
+                                  sink_pad_name = stringsinkname;
                                   }
                                 false
                               }
