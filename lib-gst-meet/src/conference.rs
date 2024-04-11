@@ -972,13 +972,13 @@ impl StanzaFilter for JitsiConference {
 
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
                         let mut map =&mut jingle_session.remote_ssrc_map;
-                        let mut sink_pad_name = "sdads";
+                        let mut sink_pad_name = String::new();
 
                         map.retain(|_, source| {
                           if let Some(participant_id) = &source.participant_id {
                               if *participant_id != participantId {
                                   if let Some(sink_name) = &source.sink_name {
-                                      sink_pad_name = sink_name;
+                                      sink_pad_name.push_str(&sink_name);
                                   }
                                   false
                               } else {
@@ -988,7 +988,11 @@ impl StanzaFilter for JitsiConference {
                               println!("participant_id is None");
                               true
                           }
-                      });
+                        });
+
+                        info!("Sink Pad Name: {:?}", sink_pad_name)
+
+
                         // for source in map.values().filter(|source| {
                         //   if let Some(participant_id) = &source.participant_id {
                         //     map.remove_entry(source);
