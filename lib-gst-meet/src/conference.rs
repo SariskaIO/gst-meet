@@ -11,6 +11,7 @@ use reqwest::blocking::Response;
 use serde_json::json;
 use std::env;
 use std::thread;
+use std::sync::Mutex;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
@@ -972,7 +973,7 @@ impl StanzaFilter for JitsiConference {
 
                       let element_removal_mutex = Mutex::new(());
                       let _guard = element_removal_mutex.lock().unwrap();
-                      
+
 
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
                         let mut map =&mut jingle_session.remote_ssrc_map;
