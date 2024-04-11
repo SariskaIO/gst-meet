@@ -977,12 +977,12 @@ impl StanzaFilter for JitsiConference {
                         map.retain(|_, source| {
                           if let Some(participant_id) = &source.participant_id {
                               if *participant_id != participantId {
-                                  if let Some(sink_name) = &source.sink_name {
-                                      sink_pad_name.push_str(&sink_name);
-                                  }
-                                  false
-                              } else {
                                   true
+                              } else {
+                                if let Some(sink_name) = &source.sink_name {
+                                    sink_pad_name.push_str(&sink_name);
+                                  }
+                                false
                               }
                           } else {
                               println!("participant_id is None");
