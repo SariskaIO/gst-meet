@@ -1016,6 +1016,7 @@ impl StanzaFilter for JitsiConference {
                         .collect();
 
                       let mut num = 0;
+                      let all_elements = filtered_vector.len();
                       for elemt in filtered_vector {
                         if num == 0 {
                           let xpos = 0 as i32;
