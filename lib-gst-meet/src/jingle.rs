@@ -993,153 +993,86 @@ impl JingleSession {
 
                     let all_elements = filtered_vector.len();
 
-                    // for elemt in filtered_vector {
-                    //   if num == 0 {
-                    //     let xpos = 0 as i32;
-                    //     let ypos = 0 as i32;
-                    //     elemt.set_property(
-                    //       "width",
-                    //       conference.config.recv_video_scale_width.clone() as i32,
-                    //     );
-                    //     elemt.set_property(
-                    //       "height",
-                    //       conference.config.recv_video_scale_height.clone() as i32,
-                    //     );
-                    //     elemt.set_property("xpos", xpos);
-                    //     elemt.set_property("ypos", ypos);
-                    //   }
-
-                    //   if num == 0 && all_elements == 4{
-                    //     let xpos = 0 as i32;
-                    //     let ypos = 0 as i32;
-                    //     elemt.set_property(
-                    //       "width",
-                    //       (conference.config.recv_video_scale_width.clone() /2u16)as i32,
-                    //     );
-                    //     elemt.set_property(
-                    //       "height",
-                    //       (conference.config.recv_video_scale_height.clone() /2u16)as i32,
-                    //     );
-                    //     elemt.set_property("xpos", xpos);
-                    //     elemt.set_property("ypos", ypos);
-                    //   }
-
-                    //   if num == 1 {
-                    //     let xpos = 0 as i32;
-                    //     let ypos =
-                    //       (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                    //     elemt.set_property(
-                    //       "width",
-                    //       (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property(
-                    //       "height",
-                    //       (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property("xpos", xpos);
-                    //     elemt.set_property("ypos", ypos);
-                    //   }
-
-                    //   if num == 2 {
-                    //     let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                    //     let ypos =
-                    //       (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                    //     elemt.set_property(
-                    //       "width",
-                    //       (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property(
-                    //       "height",
-                    //       (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property("xpos", xpos);
-                    //     elemt.set_property("ypos", ypos);
-                    //   }
-
-                    //   if num == 3{
-                    //     let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                    //     let ypos = 0 as i32;
-                    //     elemt.set_property(
-                    //       "width",
-                    //       (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property(
-                    //       "height",
-                    //       (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //     );
-                    //     elemt.set_property("xpos", xpos);
-                    //     elemt.set_property("ypos", ypos);
-                    //   }
-                    //   num = num + 1;
-                    // }
-
-                    struct ElementProperties {
-                      width: i32,
-                      height: i32,
-                      xpos: i32,
-                      ypos: i32,
-                    }
-
-                    impl ElementProperties {
-                      fn new(width: i32, height: i32, xpos: i32, ypos: i32) -> Self {
-                        Self {
-                          width,
-                          height,
-                          xpos,
-                          ypos,
-                        }
+                    for elemt in filtered_vector {
+                      if num == 0 {
+                        let xpos = 0 as i32;
+                        let ypos = 0 as i32;
+                        elemt.set_property(
+                          "width",
+                          conference.config.recv_video_scale_width.clone() as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          conference.config.recv_video_scale_height.clone() as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
                       }
+
+                      if num == 0 && all_elements == 4{
+                        let xpos = 0 as i32;
+                        let ypos = 0 as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() /2u16)as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() /2u16)as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
+                      if num == 1 {
+                        let xpos = 0 as i32;
+                        let ypos =
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
+                      if num == 2 {
+                        let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                        let ypos =
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+
+                      if num == 3{
+                        let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                        let ypos = 0 as i32;
+                        elemt.set_property(
+                          "width",
+                          (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property(
+                          "height",
+                          (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                        );
+                        elemt.set_property("xpos", xpos);
+                        elemt.set_property("ypos", ypos);
+                      }
+                      num = num + 1;
                     }
 
-                    fn calculate_element_properties(num: usize) -> ElementProperties {
-                      let (width, height, xpos, ypos) = match num {
-                        0 => {
-                          if all_elements == 4 {
-                            (
-                              conference.config.recv_video_scale_width.clone() / 2,
-                              conference.config.recv_video_scale_height.clone() / 2,
-                              0,
-                              0,
-                            )
-                          } else {
-                            (
-                              conference.config.recv_video_scale_width.clone(),
-                              conference.config.recv_video_scale_height.clone(),
-                              0,
-                              0,
-                            )
-                          }
-                        },
-                        1 => (
-                          conference.config.recv_video_scale_width.clone() / 2,
-                          conference.config.recv_video_scale_height.clone() / 2,
-                          0,
-                          conference.config.recv_video_scale_height.clone() / 2,
-                        ),
-                        2 => (
-                          conference.config.recv_video_scale_width.clone() / 2,
-                          conference.config.recv_video_scale_height.clone() / 2,
-                          conference.config.recv_video_scale_width.clone() / 2,
-                          conference.config.recv_video_scale_height.clone() / 2,
-                        ),
-                        3 => (
-                          conference.config.recv_video_scale_width.clone() / 2,
-                          conference.config.recv_video_scale_height.clone() / 2,
-                          conference.config.recv_video_scale_width.clone() / 2,
-                          0,
-                        ),
-                        _ => (0, 0, 0, 0), // Handle other cases if needed
-                      };
-                      ElementProperties::new(width as i32, height as i32, xpos as i32, ypos as i32)
-                    }
-
-                    for (num, elemt) in filtered_vector.iter().enumerate() {
-                      let properties = calculate_element_properties(num);
-                      elemt.set_property("width", properties.width);
-                      elemt.set_property("height", properties.height);
-                      elemt.set_property("xpos", properties.xpos);
-                      elemt.set_property("ypos", properties.ypos);
-                    }
                   },
                   //   for element in filtered_vector {
                   //     let some = element.name().to_string();
