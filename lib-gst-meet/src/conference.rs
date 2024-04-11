@@ -973,18 +973,35 @@ impl StanzaFilter for JitsiConference {
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
                         let mut map =&mut jingle_session.remote_ssrc_map;
                         let mut sink_pad_name = "sdads";
-                        for source in map.values().filter(|source| {
+
+                        map.retain(|_, source| {
                           if let Some(participant_id) = &source.participant_id {
-                            *participant_id == participantId
+                              if *participant_id != participantId {
+                                  if let Some(sink_name) = &source.sink_name {
+                                      sink_pad_name = sink_name;
+                                  }
+                                  false
+                              } else {
+                                  true
+                              }
                           } else {
-                            println!("participant_id is None");
-                            false
+                              println!("participant_id is None");
+                              true
                           }
-                        }) {
-                          if let Some(sink_name) = &source.sink_name {
-                            sink_pad_name = sink_name;
-                          }
-                        }
+                      });
+                        // for source in map.values().filter(|source| {
+                        //   if let Some(participant_id) = &source.participant_id {
+                        //     map.remove_entry(source);
+                        //     *participant_id == participantId
+                        //   } else {
+                        //     println!("participant_id is None");
+                        //     false
+                        //   }
+                        // }) {
+                        //   if let Some(sink_name) = &source.sink_name {
+                        //     sink_pad_name = sink_name;
+                        //   }
+                        // }
 
                         let result_element_pad_1 = self
                           .remote_participant_video_sink_element()
