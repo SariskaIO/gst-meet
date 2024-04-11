@@ -970,6 +970,10 @@ impl StanzaFilter for JitsiConference {
                     {
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
 
+                      let element_removal_mutex = Mutex::new(());
+                      let _guard = element_removal_mutex.lock().unwrap();
+                      
+
                       if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
                         let mut map =&mut jingle_session.remote_ssrc_map;
                         let mut sink_pad_name = String::new();
@@ -992,20 +996,6 @@ impl StanzaFilter for JitsiConference {
                         });
 
                         info!("Sink Pad Name: {:?}", sink_pad_name);
-
-                        // for source in map.values().filter(|source| {
-                        //   if let Some(participant_id) = &source.participant_id {
-                        //     map.remove_entry(source);
-                        //     *participant_id == participantId
-                        //   } else {
-                        //     println!("participant_id is None");
-                        //     false
-                        //   }
-                        // }) {
-                        //   if let Some(sink_name) = &source.sink_name {
-                        //     sink_pad_name = sink_name;
-                        //   }
-                        // }
 
                         let result_element_pad_1 = self
                           .remote_participant_video_sink_element()
