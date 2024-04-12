@@ -1020,8 +1020,8 @@ impl JingleSession {
                           let mut element_number = 0;
                           for element in filtered_vector {
                             if element_number == 0 {
-                              let pxpos = (conference.config.recv_video_scale_width.clone()*3u16/4u16) as i32;
-                              let xpos = -50;
+                              let pxpos = (conference.config.recv_video_scale_width.clone() as i32);
+                              let xpos = -160;
                               let ypos = 0 as i32;
 
                               element.set_property(
@@ -1041,7 +1041,7 @@ impl JingleSession {
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
-                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                (conference.config.recv_video_scale_width.clone()) as i32,
                               );
                               element.set_property(
                                 "height",
