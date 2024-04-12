@@ -1027,26 +1027,26 @@ impl JingleSession {
 
                               element.set_property(
                                 "width",
-                                (conference.config.recv_video_scale_width.clone()) as i32,
+                                (conference.config.recv_video_scale_width.clone()/2u16) as i32,
                               );
                               element.set_property(
                                 "height",
-                                conference.config.recv_video_scale_height.clone() as i32,
+                                (conference.config.recv_video_scale_height.clone()/2u16) as i32,
                               );
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 1 {
                               let xpos =
-                                (conference.config.recv_video_scale_width.clone()) as i32;
+                                (conference.config.recv_video_scale_width.clone()/2u16) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
-                                (conference.config.recv_video_scale_width.clone()) as i32,
+                                (conference.config.recv_video_scale_width.clone()/2u16) as i32,
                               );
                               element.set_property(
                                 "height",
-                                conference.config.recv_video_scale_height.clone() as i32,
+                                (conference.config.recv_video_scale_height.clone()/2u16) as i32,
                               );
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
