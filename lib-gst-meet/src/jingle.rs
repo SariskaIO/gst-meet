@@ -941,10 +941,10 @@ impl JingleSession {
                   .context("failed to link videoscale to capsfilter")?;
 
                 let videobox = gstreamer::ElementFactory::make("videobox").build()?;
-                videobox.set_property("left", &100i32).unwrap(); // Set left border size to 100 pixels
-                videobox.set_property("right", &100i32).unwrap(); // Set right border size to 100 pixels
-                videobox.set_property("top", &50i32).unwrap(); // Set top border size to 50 pixels
-                videobox.set_property("bottom", &50i32).unwrap(); // Set bottom border size to 50 pixels
+                videobox.set_property("left", &100i32); // Set left border size to 100 pixels
+                videobox.set_property("right", &100i32); // Set right border size to 100 pixels
+                videobox.set_property("top", &50i32); // Set top border size to 50 pixels
+                videobox.set_property("bottom", &50i32); // Set bottom border size to 50 pixels
 
                 pipeline
                   .add(&videobox)
@@ -954,7 +954,7 @@ impl JingleSession {
                 videoscale
                   .link(&videobox)
                   .context("failed to link videoscale to videobox")?;
-                
+
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
                   .add(&videoconvert)
