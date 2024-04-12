@@ -1245,6 +1245,7 @@ impl JingleSession {
                           }
                         }, 
                         4 => {
+                          let mut element_number = 0;
                           for element in filtered_vector {
                             if element_number == 0 {
                               let xpos = 0 as i32;
