@@ -1017,6 +1017,7 @@ impl JingleSession {
                               let xpos = 0 as i32;
                               let ypos =
                               (conference.config.recv_video_scale_height.clone() / 4u16) as i32;
+                              info!("Height Height: {:?}", ypos);
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
