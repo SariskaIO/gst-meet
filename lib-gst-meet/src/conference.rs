@@ -1024,85 +1024,343 @@ impl StanzaFilter for JitsiConference {
 
                       let mut num = 0;
                       let all_elements = filtered_vector.len();
-                      for elemt in filtered_vector {
-                        if num == 0 {
-                          let xpos = 0 as i32;
-                          let ypos = 0 as i32;
-                          elemt.set_property(
-                            "width",
-                            self.config.clone().recv_video_scale_width as i32,
-                          );
-                          elemt.set_property(
-                            "height",
-                            self.config.clone().recv_video_scale_height as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-  
-                        if num == 0 && all_elements == 4{
-                          let xpos = 0 as i32;
-                          let ypos = 0 as i32;
-                          elemt.set_property(
-                            "width",
-                            (self.config.clone().recv_video_scale_width /2u16)as i32,
-                          );
-                          elemt.set_property(
-                            "height",
-                            (self.config.clone().recv_video_scale_height /2u16)as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-  
-                        if num == 1 {
-                          let xpos = 0 as i32;
-                          let ypos =
-                            (self.config.clone().recv_video_scale_height / 2u16) as i32;
-                          elemt.set_property(
-                            "width",
-                            (self.config.clone().recv_video_scale_width / 2u16) as i32,
-                          );
-                          elemt.set_property(
-                            "height",
-                            (self.config.clone().recv_video_scale_height / 2u16) as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-  
-                        if num == 2 {
-                          let xpos = (self.config.clone().recv_video_scale_width / 2u16) as i32;
-                          let ypos =
-                            (self.config.clone().recv_video_scale_height / 2u16) as i32;
-                          elemt.set_property(
-                            "width",
-                            (self.config.clone().recv_video_scale_width / 2u16) as i32,
-                          );
-                          elemt.set_property(
-                            "height",
-                            (self.config.clone().recv_video_scale_height / 2u16) as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-  
-                        if num == 3{
-                          let xpos = (self.config.clone().recv_video_scale_width / 2u16) as i32;
-                          let ypos = 0 as i32;
-                          elemt.set_property(
-                            "width",
-                            (self.config.clone().recv_video_scale_width / 2u16) as i32,
-                          );
-                          elemt.set_property(
-                            "height",
-                            (self.config.clone().recv_video_scale_height / 2u16) as i32,
-                          );
-                          elemt.set_property("xpos", xpos);
-                          elemt.set_property("ypos", ypos);
-                        }
-                        num = num + 1;
+
+                      if self.config.clone().recv_video_scale_width
+                      > self.config.clone().recv_video_scale_height
+                    {
+                      // Then arrange the grid for Desktop
+                      match all_elements {
+                        1 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            let xpos = 0 as i32;
+                            let ypos = 0 as i32;
+                            element.set_property(
+                              "width",
+                              self.config.clone().recv_video_scale_width as i32,
+                            );
+                            element.set_property(
+                              "height",
+                              self.config.clone().recv_video_scale_height as i32,
+                            );
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
+                          }
+                        },
+                        2 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                self.config.clone().recv_video_scale_height as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        3 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        4 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 3 {
+                              let xpos = 0;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        _ => println!("More than four participants, don't know what to do"),
                       }
+                    } else {
+                      match all_elements {
+                        1 => {
+                          for element in filtered_vector {
+                            let xpos = 0 as i32;
+                            let ypos = 0 as i32;
+                            element.set_property(
+                              "width",
+                              self.config.clone().recv_video_scale_width as i32,
+                            );
+                            element.set_property(
+                              "height",
+                              self.config.clone().recv_video_scale_height as i32,
+                            );
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
+                          }
+                        },
+                        2 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+                              
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos = 0;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        3 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos = 0 as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        4 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos = 0 as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 3 {
+                              let xpos =
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                              let ypos =
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        _ => info!("More than four participants, don't know what to do"),
+                      }
+                    }
                         
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
