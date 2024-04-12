@@ -1002,40 +1002,41 @@ impl JingleSession {
                         1 => {
                           let mut element_number = 0;
                           for element in filtered_vector {
-                              let xpos = 0 as i32;
-                              let ypos = 0 as i32;
-                              element.set_property(
-                                "width",
-                                conference.config.recv_video_scale_width.clone() as i32,
-                              );
-                              element.set_property(
-                                "height",
-                                conference.config.recv_video_scale_height.clone() as i32,
-                              );
-                              element.set_property("xpos", xpos);
-                              element.set_property("ypos", ypos);
+                            let xpos = 0 as i32;
+                            let ypos = 0 as i32;
+                            element.set_property(
+                              "width",
+                              conference.config.recv_video_scale_width.clone() as i32,
+                            );
+                            element.set_property(
+                              "height",
+                              conference.config.recv_video_scale_height.clone() as i32,
+                            );
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
                           }
                         },
                         2 => {
                           let mut element_number = 0;
-                          for element in filtered_vector{
-                            if element_number == 0{
+                          for element in filtered_vector {
+                            if element_number == 0 {
                               let xpos = 0 as i32;
                               let ypos = 0 as i32;
 
                               element.set_property(
                                 "width",
-                                (conference.config.recv_video_scale_width.clone()/2u16) as i32,
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
                               );
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
                             }
-                            if element_number == 1{
-                              let xpos = (conference.config.recv_video_scale_width.clone()/2u16) as i32;
+                            if element_number == 1 {
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
-                                (conference.config.recv_video_scale_width.clone()/2u16) as i32,
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
                               );
                               element.set_property(
                                 "height",
@@ -1044,10 +1045,115 @@ impl JingleSession {
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
                             }
+                            element_number = element_number + 1;
                           }
                         },
-                        3 => {},
-                        4 => {},
+                        3 => {
+                          let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
+                        4 => {let mut element_number = 0;
+                          for element in filtered_vector {
+                            if element_number == 0 {
+                              let xpos = 0 as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 1 {
+                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos = 0 as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 2 {
+                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            if element_number == 3 {
+                              let xpos = 0;
+                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                              );
+                              element.set_property(
+                                "height",
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                              );
+                              element.set_property("xpos", xpos);
+                              element.set_property("ypos", ypos);
+                            }
+                            element_number = element_number + 1;
+                          }
+                        },
                         _ => println!("It's something else"),
                       }
                     }
@@ -1131,7 +1237,6 @@ impl JingleSession {
                     //   }
                     //   num = num + 1;
                     // }
-                  
                   },
                   //   for element in filtered_vector {
                   //     let some = element.name().to_string();
