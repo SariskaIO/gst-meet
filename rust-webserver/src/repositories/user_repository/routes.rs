@@ -391,8 +391,8 @@ pub async fn start_recording(
             --web-socket-url=wss://{}/api/v1/media/websocket \
             --xmpp-domain={} \
             --muc-domain={} \
-            --recv-video-scale-width=720 \
-            --recv-video-scale-height=1280 \
+            --recv-video-scale-width=360 \
+            --recv-video-scale-height=640 \
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
             compositor name=video \
