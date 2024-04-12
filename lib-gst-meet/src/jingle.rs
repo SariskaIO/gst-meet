@@ -939,8 +939,10 @@ impl JingleSession {
                 videoscale
                   .link(&capsfilter)
                   .context("failed to link videoscale to capsfilter")?;
+                videoscale.set_property_from_str("add-borders", &true.to_string());
 
                 let videobox = gstreamer::ElementFactory::make("videobox").build()?;
+                
                 videobox.set_property("left", &100i32); // Set left border size to 100 pixels
                 videobox.set_property("right", &100i32); // Set right border size to 100 pixels
                 videobox.set_property("top", &50i32); // Set top border size to 50 pixels
