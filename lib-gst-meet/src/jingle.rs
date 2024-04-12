@@ -1063,7 +1063,8 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 1 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
@@ -1077,8 +1078,10 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 2 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1093,7 +1096,8 @@ impl JingleSession {
                             element_number = element_number + 1;
                           }
                         },
-                        4 => {let mut element_number = 0;
+                        4 => {
+                          let mut element_number = 0;
                           for element in filtered_vector {
                             if element_number == 0 {
                               let xpos = 0 as i32;
@@ -1110,7 +1114,8 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 1 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
@@ -1124,8 +1129,10 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 2 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1139,7 +1146,8 @@ impl JingleSession {
                             }
                             if element_number == 3 {
                               let xpos = 0;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1156,8 +1164,8 @@ impl JingleSession {
                         },
                         _ => println!("More than four participants, don't know what to do"),
                       }
-                    }else{
-                      match all_elements{
+                    } else {
+                      match all_elements {
                         1 => {
                           for element in filtered_vector {
                             let xpos = 0 as i32;
@@ -1181,6 +1189,10 @@ impl JingleSession {
                               let xpos = 0 as i32;
                               let ypos = 0 as i32;
                               element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone()) as i32,
+                              );
+                              element.set_property(
                                 "height",
                                 (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
                               );
@@ -1189,7 +1201,12 @@ impl JingleSession {
                             }
                             if element_number == 1 {
                               let xpos = 0;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              element.set_property(
+                                "width",
+                                (conference.config.recv_video_scale_width.clone()) as i32,
+                              );
                               element.set_property(
                                 "height",
                                 (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
@@ -1215,7 +1232,8 @@ impl JingleSession {
                             }
                             if element_number == 1 {
                               let xpos = 0 as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1228,8 +1246,10 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 2 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1243,7 +1263,7 @@ impl JingleSession {
                             }
                             element_number = element_number + 1;
                           }
-                        }, 
+                        },
                         4 => {
                           let mut element_number = 0;
                           for element in filtered_vector {
@@ -1262,7 +1282,8 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 1 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
@@ -1277,7 +1298,8 @@ impl JingleSession {
                             }
                             if element_number == 2 {
                               let xpos = 0 as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
@@ -1290,8 +1312,10 @@ impl JingleSession {
                               element.set_property("ypos", ypos);
                             }
                             if element_number == 3 {
-                              let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                              let ypos = (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                              let xpos =
+                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                              let ypos =
+                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
                               element.set_property(
                                 "width",
                                 (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
