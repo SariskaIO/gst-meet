@@ -950,10 +950,11 @@ impl JingleSession {
                   .add(&videobox)
                   .context("failed to add videobox to pipeline")?;
                 videobox.sync_state_with_parent()?;
-                
+
                 videoscale
                   .link(&videobox)
                   .context("failed to link videoscale to videobox")?;
+                
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
                   .add(&videoconvert)
