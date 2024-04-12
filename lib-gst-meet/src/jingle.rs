@@ -1194,7 +1194,7 @@ impl JingleSession {
                               );
                               element.set_property(
                                 "height",
-                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                (conference.config.recv_video_scale_height.clone()) as i32,
                               );
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
@@ -1209,7 +1209,7 @@ impl JingleSession {
                               );
                               element.set_property(
                                 "height",
-                                (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                (conference.config.recv_video_scale_height.clone()) as i32,
                               );
                               element.set_property("xpos", xpos);
                               element.set_property("ypos", ypos);
