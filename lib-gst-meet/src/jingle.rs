@@ -936,26 +936,11 @@ impl JingleSession {
                   .add(&capsfilter)
                   .context("failed to add capsfilter to pipeline")?;
                 capsfilter.sync_state_with_parent()?;
+
                 videoscale
                   .link(&capsfilter)
                   .context("failed to link videoscale to capsfilter")?;
                 videoscale.set_property_from_str("add-borders", &true.to_string());
-
-                let videobox = gstreamer::ElementFactory::make("videobox").build()?;
-                
-                videobox.set_property("left", &100i32); // Set left border size to 100 pixels
-                videobox.set_property("right", &100i32); // Set right border size to 100 pixels
-                videobox.set_property("top", &50i32); // Set top border size to 50 pixels
-                videobox.set_property("bottom", &50i32); // Set bottom border size to 50 pixels
-
-                pipeline
-                  .add(&videobox)
-                  .context("failed to add videobox to pipeline")?;
-                videobox.sync_state_with_parent()?;
-
-                videoscale
-                  .link(&videobox)
-                  .context("failed to link videoscale to videobox")?;
 
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
@@ -1037,8 +1022,7 @@ impl JingleSession {
                           let mut element_number = 0;
                           for element in filtered_vector {
                             if element_number == 0 {
-                              let pxpos = (conference.config.recv_video_scale_width.clone() as i32);
-                              let xpos = -160;
+                              let xpos = 0 as i32;
                               let ypos = 0 as i32;
 
                               element.set_property(
@@ -1054,7 +1038,7 @@ impl JingleSession {
                             }
                             if element_number == 1 {
                               let xpos =
-                                (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                                (conference.config.recv_video_scale_width.clone()) as i32;
                               let ypos = 0 as i32;
                               element.set_property(
                                 "width",
