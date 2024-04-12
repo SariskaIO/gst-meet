@@ -1021,8 +1021,7 @@ impl StanzaFilter for JitsiConference {
                         .filter(|&pad| pad.name().to_string() != "src")
                         .cloned()
                         .collect();
-
-                      let mut num = 0;
+                      
                       let all_elements = filtered_vector.len();
 
                       if self.config.clone().recv_video_scale_width
