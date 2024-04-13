@@ -994,7 +994,7 @@ impl JingleSession {
 
                     // Change the properties of the sink pad as new pads are added
                     fn set_properties_for_sink_pad_element(
-                      sink_element: &mut Element,
+                      sink_element: &mut Pad,
                       width: i32,
                       height: i32,
                       xpos: i32,
@@ -1006,8 +1006,8 @@ impl JingleSession {
                       sink_element.set_property("ypos", ypos);
                     }
 
-                    const HALF: u16 = 2;
-                    const QUARTER: u16 = 4;
+                    const HALF: usize = 2;
+                    const QUARTER: usize = 4;
 
                     let width = conference.config.recv_video_scale_width.clone() as i32;
                     let height = conference.config.recv_video_scale_height.clone() as i32;
@@ -1026,8 +1026,8 @@ impl JingleSession {
                         (index / HALF) as i32;
                       };
 
-                      let xpos = col as i32 * width;
-                      let ypos = row as i32 * height;
+                      let xpos = col * width as i32;
+                      let ypos = row * height as i32;
 
                       match sink_element_size {
                         1 | 2 if (sink_element_size % HALF == 0) => {
@@ -1036,7 +1036,7 @@ impl JingleSession {
                         3 => {
                           let (x_offset, y_offset) = match index {
                             0 => (0, 0),
-                            1 => (width / HALF, 0),
+                            1 => (width / HALF as i32 , 0),
                             2 => (width / QUARTER as i32, height / HALF as i32),
                             _ => unreachable!(),
                           };
