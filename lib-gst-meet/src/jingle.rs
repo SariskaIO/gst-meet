@@ -913,6 +913,7 @@ impl JingleSession {
                 .context("decoder has no src pad")?,
               MediaType::Video => {
                 let videoscale = gstreamer::ElementFactory::make("videoscale").build()?;
+                videoscale.set_property_from_str("add-borders", &true.to_string());
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;
@@ -922,26 +923,30 @@ impl JingleSession {
                   .context("failed to link decoder to videoscale")?;
 
                 let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
+
                 capsfilter.set_property_from_str(
                   "caps",
                   &format!(
-                    "video/x-raw, width={}, height={}",
-                    conference.config.recv_video_scale_width,
-                    conference.config.recv_video_scale_height
+                    "video/x-raw" // , width={}, height={}",
+                                  // conference.config.recv_video_scale_width,
+                                  // conference.config.recv_video_scale_height
                   ),
                 );
                 pipeline
                   .add(&capsfilter)
                   .context("failed to add capsfilter to pipeline")?;
                 capsfilter.sync_state_with_parent()?;
+
                 videoscale
                   .link(&capsfilter)
                   .context("failed to link videoscale to capsfilter")?;
+                videoscale.set_property_from_str("add-borders", &true.to_string());
 
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
                   .add(&videoconvert)
                   .context("failed to add videoconvert to pipeline")?;
+
                 videoconvert.sync_state_with_parent()?;
                 capsfilter
                   .link(&videoconvert)
@@ -988,25 +993,162 @@ impl JingleSession {
 
                     let mut num = 0;
 
-                    for element in filtered_vector {
-                      let some = element.name().to_string();
-                      let row = num / 2;
-                      let col = num % 2;
-                      let xpos =
-                        col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                      let ypos =
-                        row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                      element.set_property(
-                        "width",
-                        conference.config.recv_video_scale_width.clone() as i32,
-                      );
-                      element.set_property(
-                        "height",
-                        conference.config.recv_video_scale_height.clone() as i32,
-                      );
-                      element.set_property("xpos", xpos);
-                      element.set_property("ypos", ypos);
-                      num = num + 1;
+                    let all_elements = filtered_vector.len();
+
+                    if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone(){
+                      if (all_elements % 2 == 0 || all_elements == 1) {
+                        for element in filtered_vector {
+                          let some = element.name().to_string();
+                          let row = num / 2;
+                          let col = num % 2;
+                          let xpos =
+                            col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                          let ypos =
+                            row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                          element.set_property(
+                            "width",
+                            conference.config.recv_video_scale_width.clone() as i32,
+                          );
+                          element.set_property(
+                            "height",
+                            conference.config.recv_video_scale_height.clone() as i32,
+                          );
+                          element.set_property("xpos", xpos);
+                          element.set_property("ypos", ypos);
+                          num = num + 1;
+                        }
+                      } else {
+                        match all_elements {
+                          3 => {
+                            let mut element_number = 0;
+                            for element in filtered_vector {
+                              if element_number == 0 {
+                                let xpos = 0 as i32;
+                                let ypos = 0 as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              if element_number == 1 {
+                                let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                                let ypos = 0 as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              if element_number == 2 {
+                                let xpos =
+                                  (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
+                                let ypos =
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              element_number = element_number + 1;
+                            }
+                          },
+                          _ => info!("More than four participants, don't know what to do"),
+                        }
+                      }
+                    }else{
+                      if (all_elements % 2 == 0 || all_elements == 1) {
+                        for element in filtered_vector {
+                          let some = element.name().to_string();
+                          let row = num % 2;
+                          let col = num / 2;
+                          let xpos =
+                            col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
+                          let ypos =
+                            row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
+                          element.set_property(
+                            "width",
+                            conference.config.recv_video_scale_width.clone() as i32,
+                          );
+                          element.set_property(
+                            "height",
+                            conference.config.recv_video_scale_height.clone() as i32,
+                          );
+                          element.set_property("xpos", xpos);
+                          element.set_property("ypos", ypos);
+                          num = num + 1;
+                        }
+                      }else{
+                        match all_elements {
+                          3 => {
+                            let mut element_number = 0;
+                            for element in filtered_vector {
+                              if element_number == 0 {
+                                let xpos = 0 as i32;
+                                let ypos = 0 as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              if element_number == 1 {
+                                let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
+                                let ypos = 0 as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              if element_number == 2 {
+                                let xpos =
+                                  (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
+                                let ypos =
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
+                                element.set_property(
+                                  "width",
+                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
+                                );
+                                element.set_property(
+                                  "height",
+                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
+                                );
+                                element.set_property("xpos", xpos);
+                                element.set_property("ypos", ypos);
+                              }
+                              element_number = element_number + 1;
+                            }
+                          },
+                          _ => info!("More than four participants, don't know what to do"),
+                        }
+                      }
                     }
                   },
                 }
@@ -1023,9 +1165,6 @@ impl JingleSession {
                     .context("not connected (no jingle session)")?
                     .remote_ssrc_map;
 
-                  // Print the remote_ssrc_map before accessing the Source
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-
                   // Use the remote_ssrc_map directly without cloning
                   if let Some(source) = remote_ssrc_map.get_mut(&ssrc) {
                     // Modify the source directly
@@ -1033,9 +1172,6 @@ impl JingleSession {
                   } else {
                     bail!("unknown ssrc: {}", ssrc);
                   }
-
-                  println!("remote_ssrc_map: {:?}", remote_ssrc_map);
-                  // Return the remote_ssrc_map
                   Ok::<_, anyhow::Error>(remote_ssrc_map.clone())
                 });
 

@@ -969,28 +969,35 @@ impl StanzaFilter for JitsiConference {
                         .is_some()
                     {
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
+                      
+                      if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
+                        let mut map =&mut jingle_session.remote_ssrc_map;
+                        let mut sink_pad_name = String::new();
 
-                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
-                        let mut map = jingle_session.remote_ssrc_map.clone();
-                        let mut sink_pad_name = "sdads";
-                        for source in map.values().filter(|source| {
+                        map.retain(|_, source| {
                           if let Some(participant_id) = &source.participant_id {
-                            *participant_id == participantId
+                              if *participant_id != participantId {
+                                  true
+                              } else {
+                                if let Some(sink_name) = &source.sink_name {
+                                  let stringsinkname = sink_name.clone();
+                                  sink_pad_name = stringsinkname;
+                                  }
+                                false
+                              }
                           } else {
-                            println!("participant_id is None");
-                            false
+                              println!("participant_id is None");
+                              true
                           }
-                        }) {
-                          if let Some(sink_name) = &source.sink_name {
-                            sink_pad_name = sink_name;
-                          }
-                        }
+                        });
+
+                        info!("Sink Pad Name: {:?}", sink_pad_name);
 
                         let result_element_pad_1 = self
                           .remote_participant_video_sink_element()
                           .await
                           .unwrap()
-                          .static_pad(sink_pad_name);
+                          .static_pad(sink_pad_name.as_str());
 
                         let number_of_participants = self.inner.lock().await.participants.len();
 
@@ -1015,19 +1022,166 @@ impl StanzaFilter for JitsiConference {
                         .cloned()
                         .collect();
 
-                      let mut num = 0;
-                      for element in filtered_vector {
-                        let some = element.name().to_string();
-                        let row = num / 2;
-                        let col = num % 2;
-                        let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                        let ypos =
-                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
-                        element.set_property("xpos", xpos);
-                        element.set_property("ypos", ypos);
-                        num = num + 1;
-                      }
+                      let mut num = 0;  
+                      
+                      let all_elements = filtered_vector.len();
 
+                      if self.config.clone().recv_video_scale_width > self.config.clone().recv_video_scale_height{
+                        if (all_elements % 2 == 0 || all_elements == 1) {
+                          for element in filtered_vector {
+                            let some = element.name().to_string();
+                            let row = num / 2;
+                            let col = num % 2;
+                            let xpos =
+                              col as i32 * (self.config.clone().recv_video_scale_width as i32);
+                            let ypos =
+                              row as i32 * (self.config.clone().recv_video_scale_height as i32);
+                            element.set_property(
+                              "width",
+                              self.config.clone().recv_video_scale_width as i32,
+                            );
+                            element.set_property(
+                              "height",
+                              self.config.clone().recv_video_scale_height as i32,
+                            );
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
+                            num = num + 1;
+                          }
+                        } else {
+                          match all_elements {
+                            3 => {
+                              let mut element_number = 0;
+                              for element in filtered_vector {
+                                if element_number == 0 {
+                                  let xpos = 0 as i32;
+                                  let ypos = 0 as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                if element_number == 1 {
+                                  let xpos = (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                                  let ypos = 0 as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                if element_number == 2 {
+                                  let xpos =
+                                    (self.config.clone().recv_video_scale_width / 4u16) as i32;
+                                  let ypos =
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                element_number = element_number + 1;
+                              }
+                            },
+                            _ => info!("More than four participants, don't know what to do"),
+                          }
+                        }
+                      }else{
+                        if (all_elements % 2 == 0 || all_elements == 1) {
+                          for element in filtered_vector {
+                            let some = element.name().to_string();
+                            let row = num % 2;
+                            let col = num / 2;
+                            let xpos =
+                              col as i32 * (self.config.clone().recv_video_scale_width as i32);
+                            let ypos =
+                              row as i32 * (self.config.clone().recv_video_scale_height as i32);
+                            element.set_property(
+                              "width",
+                              self.config.clone().recv_video_scale_width as i32,
+                            );
+                            element.set_property(
+                              "height",
+                              self.config.clone().recv_video_scale_height as i32,
+                            );
+                            element.set_property("xpos", xpos);
+                            element.set_property("ypos", ypos);
+                            num = num + 1;
+                          }
+                        }else{
+                          match all_elements {
+                            3 => {
+                              let mut element_number = 0;
+                              for element in filtered_vector {
+                                if element_number == 0 {
+                                  let xpos = 0 as i32;
+                                  let ypos = 0 as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                if element_number == 1 {
+                                  let xpos = (self.config.clone().recv_video_scale_width / 2u16) as i32;
+                                  let ypos = 0 as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                if element_number == 2 {
+                                  let xpos =
+                                    (self.config.clone().recv_video_scale_width / 4u16) as i32;
+                                  let ypos =
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32;
+                                  element.set_property(
+                                    "width",
+                                    (self.config.clone().recv_video_scale_width / 2u16) as i32,
+                                  );
+                                  element.set_property(
+                                    "height",
+                                    (self.config.clone().recv_video_scale_height / 2u16) as i32,
+                                  );
+                                  element.set_property("xpos", xpos);
+                                  element.set_property("ypos", ypos);
+                                }
+                                element_number = element_number + 1;
+                              }
+                            },
+                            _ => info!("More than four participants, don't know what to do"),
+                          }
+                        }
+                      }
+                        
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
                       //   let mut real_participant_count = 0;
                       //   let recorder_domain =
