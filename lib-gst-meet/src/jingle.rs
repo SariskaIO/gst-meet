@@ -1069,6 +1069,7 @@ impl JingleSession {
                             element_number = element_number + 1;
                           }
                         },
+                        _ => info!("More than four participants, don't know what to do"),
                       }
                     }
 
