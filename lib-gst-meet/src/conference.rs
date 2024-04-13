@@ -1022,6 +1022,8 @@ impl StanzaFilter for JitsiConference {
                         .cloned()
                         .collect();
 
+                      let mut num = 0;  
+                      
                       let all_elements = filtered_vector.len();
 
                       if self.config.clone().recv_video_scale_width > self.config.clone().recv_video_scale_height{
