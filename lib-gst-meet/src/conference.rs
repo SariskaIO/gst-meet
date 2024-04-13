@@ -970,27 +970,34 @@ impl StanzaFilter for JitsiConference {
                     {
                       let participantId = jid.node.clone().unwrap_or_default().to_string();
 
-                      if let Some(jingle_session) = self.jingle_session.lock().await.as_ref() {
-                        let mut map = jingle_session.remote_ssrc_map.clone();
-                        let mut sink_pad_name = "sdads";
-                        for source in map.values().filter(|source| {
+                      if let Some(jingle_session) = self.jingle_session.lock().await.as_mut() {
+                        let mut map = &mut jingle_session.remote_ssrc_map;
+                        let mut sink_pad_name = String::new();
+
+                        map.retain(|_, source| {
                           if let Some(participant_id) = &source.participant_id {
-                            *participant_id == participantId
+                            if *participant_id != participantId {
+                              true
+                            } else {
+                              if let Some(sink_name) = &source.sink_name {
+                                let stringsinkname = sink_name.clone();
+                                sink_pad_name = stringsinkname;
+                              }
+                              false
+                            }
                           } else {
                             println!("participant_id is None");
-                            false
+                            true
                           }
-                        }) {
-                          if let Some(sink_name) = &source.sink_name {
-                            sink_pad_name = sink_name;
-                          }
-                        }
+                        });
+
+                        info!("Sink Pad Name: {:?}", sink_pad_name);
 
                         let result_element_pad_1 = self
                           .remote_participant_video_sink_element()
                           .await
                           .unwrap()
-                          .static_pad(sink_pad_name);
+                          .static_pad(sink_pad_name.as_str());
 
                         let number_of_participants = self.inner.lock().await.participants.len();
 
@@ -1009,23 +1016,77 @@ impl StanzaFilter for JitsiConference {
                         .pads();
 
                       // filter out just the video sink pads
-                      let filtered_vector: Vec<Pad> = pad_vector
+                      let mut sink_pads_vector: Vec<Pad> = pad_vector
                         .iter()
                         .filter(|&pad| pad.name().to_string() != "src")
                         .cloned()
                         .collect();
 
-                      let mut num = 0;
-                      for element in filtered_vector {
-                        let some = element.name().to_string();
-                        let row = num / 2;
-                        let col = num % 2;
-                        let xpos = col as i32 * (self.config.clone().recv_video_scale_width as i32);
-                        let ypos =
-                          row as i32 * (self.config.clone().recv_video_scale_height as i32);
-                        element.set_property("xpos", xpos);
-                        element.set_property("ypos", ypos);
-                        num = num + 1;
+                      let sink_element_size = sink_pads_vector.len();
+
+                      fn set_properties_for_sink_pad_element(
+                        sink_element: &mut Pad,
+                        width: i32,
+                        height: i32,
+                        xpos: i32,
+                        ypos: i32,
+                      ) {
+                        sink_element.set_property("width", width);
+                        sink_element.set_property("height", height);
+                        sink_element.set_property("xpos", xpos);
+                        sink_element.set_property("ypos", ypos);
+                      }
+
+                      const HALF: usize = 2;
+                      const QUARTER: usize = 4;
+                      let width = self.config.clone().recv_video_scale_width as i32;
+                      let height = self.config.clone().recv_video_scale_height as i32;
+
+                      for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
+                        let row = if width > height {
+                          (index / HALF)
+                        } else {
+                          (index % HALF)
+                        };
+                        let col = if width > height {
+                          (index % HALF)
+                        } else {
+                          (index / HALF)
+                        };
+
+                        let xpos = (col as i32 * width);
+                        let ypos = (row as i32 * height);
+
+                        // If the number of sink elements are odd, use grid layout
+                        if sink_element_size % HALF == 0 || sink_element_size == 1 {
+                          set_properties_for_sink_pad_element(
+                            sink_element,
+                            width,
+                            height,
+                            xpos,
+                            ypos,
+                          );
+                        }
+
+                        // If the number of sink elemets 3, then the logic needs to be custom
+                        match sink_element_size {
+                          3 => {
+                            let (x_offset, y_offset) = match index {
+                              0 => (0, 0),
+                              1 => (width / HALF as i32, 0),
+                              2 => (width / QUARTER as i32, height / HALF as i32),
+                              _ => unreachable!(),
+                            };
+                            set_properties_for_sink_pad_element(
+                              sink_element,
+                              width / HALF as i32,
+                              height / HALF as i32,
+                              x_offset,
+                              y_offset,
+                            );
+                          },
+                          _ => info!("More than four participants, don't know what to do"),
+                        }
                       }
 
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
