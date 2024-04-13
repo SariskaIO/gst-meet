@@ -1016,7 +1016,7 @@ impl StanzaFilter for JitsiConference {
                         .pads();
 
                       // filter out just the video sink pads
-                      let sink_pads_vector: Vec<Pad> = pad_vector
+                      let mut sink_pads_vector: Vec<Pad> = pad_vector
                         .iter()
                         .filter(|&pad| pad.name().to_string() != "src")
                         .cloned()
