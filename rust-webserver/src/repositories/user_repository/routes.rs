@@ -487,8 +487,8 @@ pub async fn start_recording(
         location = format!("{}?param={}", location, encoded);
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=640 \
-        --recv-video-scale-height=360 \
+        --recv-video-scale-width=1280 \
+        --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='compositor name=video background=black \
            ! x264enc \
@@ -500,8 +500,8 @@ pub async fn start_recording(
         location = format!("{}?param={}", location, encoded);
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=640 \
-        --recv-video-scale-height=360 \
+        --recv-video-scale-width=1280 \
+        --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
            ! x264enc \
