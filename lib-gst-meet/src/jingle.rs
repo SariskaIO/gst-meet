@@ -983,7 +983,7 @@ impl JingleSession {
                   },
                   MediaType::Video => {
                     // Sink element also contains the src pad, hence filtering out any source from the pads
-                    let sink_pads_vector: Vec<Pad> = sink_element
+                    let mut sink_pads_vector: Vec<Pad> = sink_element
                       .pads()
                       .iter()
                       .filter(|&pad| pad.name().to_string() != "src")
