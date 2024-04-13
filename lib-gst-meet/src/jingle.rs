@@ -982,174 +982,73 @@ impl JingleSession {
                     // Do noting
                   },
                   MediaType::Video => {
-                    let pad_length = sink_element.pads().clone().len() - 1;
-                    let pad_vector = sink_element.pads();
-
-                    let filtered_vector: Vec<Pad> = pad_vector
+                    // Sink element also contains the src pad, hence filtering out any source from the pads
+                    let mut sink_pads_vector: Vec<Pad> = sink_element
+                      .pads()
                       .iter()
                       .filter(|&pad| pad.name().to_string() != "src")
                       .cloned()
                       .collect();
 
-                    let mut num = 0;
+                    let sink_element_size = sink_pads_vector.len();
 
-                    let all_elements = filtered_vector.len();
+                    // Change the properties of the sink pad as new pads are added
+                    fn set_properties_for_sink_pad_element(
+                      sink_element: &mut Pad,
+                      width: i32,
+                      height: i32,
+                      xpos: i32,
+                      ypos: i32,
+                    ) {
+                      sink_element.set_property("width", width);
+                      sink_element.set_property("height", height);
+                      sink_element.set_property("xpos", xpos);
+                      sink_element.set_property("ypos", ypos);
+                    }
 
-                    if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone(){
-                      if (all_elements % 2 == 0 || all_elements == 1) {
-                        for element in filtered_vector {
-                          let some = element.name().to_string();
-                          let row = num / 2;
-                          let col = num % 2;
-                          let xpos =
-                            col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                          let ypos =
-                            row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                          element.set_property(
-                            "width",
-                            conference.config.recv_video_scale_width.clone() as i32,
-                          );
-                          element.set_property(
-                            "height",
-                            conference.config.recv_video_scale_height.clone() as i32,
-                          );
-                          element.set_property("xpos", xpos);
-                          element.set_property("ypos", ypos);
-                          num = num + 1;
-                        }
+                    const HALF: usize = 2;
+                    const QUARTER: usize = 4;
+
+                    let width = conference.config.recv_video_scale_width.clone() as i32;
+                    let height = conference.config.recv_video_scale_height.clone() as i32;
+
+                    for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
+                      let row = if width > height{
+                        (index / HALF)
                       } else {
-                        match all_elements {
-                          3 => {
-                            let mut element_number = 0;
-                            for element in filtered_vector {
-                              if element_number == 0 {
-                                let xpos = 0 as i32;
-                                let ypos = 0 as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              if element_number == 1 {
-                                let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                                let ypos = 0 as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              if element_number == 2 {
-                                let xpos =
-                                  (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
-                                let ypos =
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              element_number = element_number + 1;
-                            }
-                          },
-                          _ => info!("More than four participants, don't know what to do"),
-                        }
+                        (index % HALF) 
+                      };
+                      let col = if width > height
+                      {
+                        (index % HALF) 
+                      } else {
+                        (index / HALF)
+                      };
+
+                      let xpos = (col as i32 * width);
+                      let ypos = (row as i32 * height);
+
+                      // If the number of sink elements are odd, use grid layout
+                      if sink_element_size % HALF == 0 || sink_element_size == 1{
+                        set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
                       }
-                    }else{
-                      if (all_elements % 2 == 0 || all_elements == 1) {
-                        for element in filtered_vector {
-                          let some = element.name().to_string();
-                          let row = num % 2;
-                          let col = num / 2;
-                          let xpos =
-                            col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                          let ypos =
-                            row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                          element.set_property(
-                            "width",
-                            conference.config.recv_video_scale_width.clone() as i32,
-                          );
-                          element.set_property(
-                            "height",
-                            conference.config.recv_video_scale_height.clone() as i32,
-                          );
-                          element.set_property("xpos", xpos);
-                          element.set_property("ypos", ypos);
-                          num = num + 1;
+
+                      // If the number of sink elemets 3, then the logic needs to be custom
+                      match sink_element_size {
+                        3 => {
+                          let (x_offset, y_offset) = match index {
+                            0 => (0, 0),
+                            1 => (width / HALF as i32 , 0),
+                            2 => (width / QUARTER as i32, height / HALF as i32),
+                            _ => unreachable!(),
+                          };
+                          set_properties_for_sink_pad_element(sink_element, width / HALF as i32, 
+                            height / HALF as i32,  x_offset, y_offset);
                         }
-                      }else{
-                        match all_elements {
-                          3 => {
-                            let mut element_number = 0;
-                            for element in filtered_vector {
-                              if element_number == 0 {
-                                let xpos = 0 as i32;
-                                let ypos = 0 as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              if element_number == 1 {
-                                let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                                let ypos = 0 as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              if element_number == 2 {
-                                let xpos =
-                                  (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
-                                let ypos =
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                                element.set_property(
-                                  "width",
-                                  (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                                );
-                                element.set_property(
-                                  "height",
-                                  (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                                );
-                                element.set_property("xpos", xpos);
-                                element.set_property("ypos", ypos);
-                              }
-                              element_number = element_number + 1;
-                            }
-                          },
-                          _ => info!("More than four participants, don't know what to do"),
-                        }
+                        _ => info!("More than four participants, don't know what to do"),
                       }
                     }
+                  
                   },
                 }
 
