@@ -1015,19 +1015,19 @@ impl JingleSession {
                     for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
                       let row = if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone()
                       {
-                        (index / HALF) as i32;
+                        (index / HALF)
                       } else {
-                        (index % HALF) as i32;
+                        (index % HALF) 
                       };
                       let col = if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone()
                       {
-                        (index % HALF) as i32;
+                        (index % HALF) 
                       } else {
-                        (index / HALF) as i32;
+                        (index / HALF)
                       };
 
-                      let xpos = (col * width) as i32;
-                      let ypos = (row * height) as i32;
+                      let xpos = (col as i32 * width);
+                      let ypos = (row as i32 * height);
 
                       match sink_element_size {
                         1 | 2 if (sink_element_size % HALF == 0) => {
