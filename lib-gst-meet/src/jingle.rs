@@ -1031,7 +1031,7 @@ impl JingleSession {
 
                       match sink_element_size {
                         1 | 2 if (sink_element_size % HALF == 0) => {
-                          set_properties_for_sink_pad_element(&mut sink_element, width, height, xpos, ypos);
+                          set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
                         }
                         3 => {
                           let (x_offset, y_offset) = match index {
@@ -1040,7 +1040,8 @@ impl JingleSession {
                             2 => (width / QUARTER as i32, height / HALF as i32),
                             _ => unreachable!(),
                           };
-                          set_properties_for_sink_pad_element(&mut sink_element, width, height, xpos, ypos)
+                          set_properties_for_sink_pad_element(sink_element, width / HALF as i32, 
+                            height / HALF as i32, xpos + x_offset, ypos + y_offset);
                         }
                         _ => info!("More than four participants, don't know what to do"),
                       }
