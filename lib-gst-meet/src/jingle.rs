@@ -1013,13 +1013,12 @@ impl JingleSession {
                     let height = conference.config.recv_video_scale_height.clone() as i32;
 
                     for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
-                      let row = if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone()
-                      {
+                      let row = if width > height{
                         (index / HALF)
                       } else {
                         (index % HALF) 
                       };
-                      let col = if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone()
+                      let col = if width > height
                       {
                         (index % HALF) 
                       } else {
@@ -1029,10 +1028,12 @@ impl JingleSession {
                       let xpos = (col as i32 * width);
                       let ypos = (row as i32 * height);
 
+                      // If the number of sink elements are odd, use grid layout
                       if sink_element_size % HALF == 0 || sink_element_size == 1{
                         set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
                       }
 
+                      // If the number of sink elemets 3, then the logic needs to be custom
                       match sink_element_size {
                         3 => {
                           let (x_offset, y_offset) = match index {
@@ -1047,162 +1048,7 @@ impl JingleSession {
                         _ => info!("More than four participants, don't know what to do"),
                       }
                     }
-
-                    // if conference.config.recv_video_scale_width.clone() > conference.config.recv_video_scale_height.clone(){
-                    //   if (all_elements % 2 == 0 || all_elements == 1) {
-                    //     for element in filtered_vector {
-                    //       let some = element.name().to_string();
-                    //       let row = num / 2;
-                    //       let col = num % 2;
-                    //       let xpos =
-                    //         col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                    //       let ypos =
-                    //         row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                    //       element.set_property(
-                    //         "width",
-                    //         conference.config.recv_video_scale_width.clone() as i32,
-                    //       );
-                    //       element.set_property(
-                    //         "height",
-                    //         conference.config.recv_video_scale_height.clone() as i32,
-                    //       );
-                    //       element.set_property("xpos", xpos);
-                    //       element.set_property("ypos", ypos);
-                    //       num = num + 1;
-                    //     }
-                    //   } else {
-                    //     match all_elements {
-                    //       3 => {
-                    //         let mut element_number = 0;
-                    //         for element in filtered_vector {
-                    //           if element_number == 0 {
-                    //             let xpos = 0 as i32;
-                    //             let ypos = 0 as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           if element_number == 1 {
-                    //             let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                    //             let ypos = 0 as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           if element_number == 2 {
-                    //             let xpos =
-                    //               (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
-                    //             let ypos =
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           element_number = element_number + 1;
-                    //         }
-                    //       },
-                    //       _ => info!("More than four participants, don't know what to do"),
-                    //     }
-                    //   }
-                    // }else{
-                    //   if (all_elements % 2 == 0 || all_elements == 1) {
-                    //     for element in filtered_vector {
-                    //       let some = element.name().to_string();
-                    //       let row = num % 2;
-                    //       let col = num / 2;
-                    //       let xpos =
-                    //         col as i32 * (conference.config.recv_video_scale_width.clone() as i32);
-                    //       let ypos =
-                    //         row as i32 * (conference.config.recv_video_scale_height.clone() as i32);
-                    //       element.set_property(
-                    //         "width",
-                    //         conference.config.recv_video_scale_width.clone() as i32,
-                    //       );
-                    //       element.set_property(
-                    //         "height",
-                    //         conference.config.recv_video_scale_height.clone() as i32,
-                    //       );
-                    //       element.set_property("xpos", xpos);
-                    //       element.set_property("ypos", ypos);
-                    //       num = num + 1;
-                    //     }
-                    //   }else{
-                    //     match all_elements {
-                    //       3 => {
-                    //         let mut element_number = 0;
-                    //         for element in filtered_vector {
-                    //           if element_number == 0 {
-                    //             let xpos = 0 as i32;
-                    //             let ypos = 0 as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           if element_number == 1 {
-                    //             let xpos = (conference.config.recv_video_scale_width.clone() / 2u16) as i32;
-                    //             let ypos = 0 as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           if element_number == 2 {
-                    //             let xpos =
-                    //               (conference.config.recv_video_scale_width.clone() / 4u16) as i32;
-                    //             let ypos =
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32;
-                    //             element.set_property(
-                    //               "width",
-                    //               (conference.config.recv_video_scale_width.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property(
-                    //               "height",
-                    //               (conference.config.recv_video_scale_height.clone() / 2u16) as i32,
-                    //             );
-                    //             element.set_property("xpos", xpos);
-                    //             element.set_property("ypos", ypos);
-                    //           }
-                    //           element_number = element_number + 1;
-                    //         }
-                    //       },
-                    //       _ => info!("More than four participants, don't know what to do"),
-                    //     }
-                    //   }
-                    // }
+                  
                   },
                 }
 
