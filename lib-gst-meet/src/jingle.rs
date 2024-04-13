@@ -1026,8 +1026,8 @@ impl JingleSession {
                         (index / HALF) as i32;
                       };
 
-                      let xpos = col * width as i32;
-                      let ypos = row * height as i32;
+                      let xpos = (col * width) as i32;
+                      let ypos = (row * height) as i32;
 
                       match sink_element_size {
                         1 | 2 if (sink_element_size % HALF == 0) => {
