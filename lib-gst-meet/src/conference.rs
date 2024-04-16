@@ -1087,6 +1087,7 @@ impl StanzaFilter for JitsiConference {
                           },
                           _ => info!("More than four participants, don't know what to do"),
                         }
+                      
                       }
 
                       // fn get_real_participants(participants: HashMap<String, Participant>) -> u32 {
