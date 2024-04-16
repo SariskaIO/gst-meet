@@ -946,7 +946,6 @@ impl JingleSession {
                 videoscale
                   .link(&capsfilter)
                   .context("failed to link videoscale to capsfilter")?;
-                videoscale.set_property_from_str("add-borders", &true.to_string());
 
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
