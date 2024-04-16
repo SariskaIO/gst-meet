@@ -938,9 +938,11 @@ impl JingleSession {
                       width, height
                   ),
               );
+
                 pipeline
                   .add(&capsfilter)
                   .context("failed to add capsfilter to pipeline")?;
+                
                 capsfilter.sync_state_with_parent()?;
 
                 videoscale
