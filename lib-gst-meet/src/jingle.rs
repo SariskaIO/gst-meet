@@ -922,25 +922,25 @@ impl JingleSession {
                   .link(&videoscale)
                   .context("failed to link decoder to videoscale")?;
 
-                let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
+                // let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
 
-                capsfilter.set_property_from_str(
-                  "caps",
-                  &format!(
-                    "video/x-raw" // , width={}, height={}",
-                                  // conference.config.recv_video_scale_width,
-                                  // conference.config.recv_video_scale_height
-                  ),
-                );
-                pipeline
-                  .add(&capsfilter)
-                  .context("failed to add capsfilter to pipeline")?;
-                capsfilter.sync_state_with_parent()?;
+                // capsfilter.set_property_from_str(
+                //   "caps",
+                //   &format!(
+                //     "video/x-raw" // , width={}, height={}",
+                //                   // conference.config.recv_video_scale_width,
+                //                   // conference.config.recv_video_scale_height
+                //   ),
+                // );
+                // pipeline
+                //   .add(&capsfilter)
+                //   .context("failed to add capsfilter to pipeline")?;
+                // capsfilter.sync_state_with_parent()?;
 
-                videoscale
-                  .link(&capsfilter)
-                  .context("failed to link videoscale to capsfilter")?;
-                videoscale.set_property_from_str("add-borders", &true.to_string());
+                // videoscale
+                //   .link(&capsfilter)
+                //   .context("failed to link videoscale to capsfilter")?;
+                // videoscale.set_property_from_str("add-borders", &true.to_string());
 
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
