@@ -407,9 +407,9 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. videoscale \
-        ! compositor name=video background=black \
-           ! x264enc \
+        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+           ! videoscale \
+           ! x264enc speed-preset=ultrafast tune=zerolatency \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
@@ -534,6 +534,7 @@ pub async fn start_recording(
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
            ! x264enc \
+           ! videoscale
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
