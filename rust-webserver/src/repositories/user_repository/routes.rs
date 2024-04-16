@@ -376,6 +376,7 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+           ! videoscale
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -392,6 +393,7 @@ pub async fn start_recording(
         --recv-video-scale-height=640 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+           ! videoscale
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -429,6 +431,7 @@ pub async fn start_recording(
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
             compositor name=video background=black \
+            ! videoscale \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
             API_HOST,
@@ -447,6 +450,7 @@ pub async fn start_recording(
         --recv-video-scale-height=640 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+           ! videoscale \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -467,6 +471,7 @@ pub async fn start_recording(
             --room-name={} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
             compositor name=video background=black \
+            ! videoscale \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
             API_HOST,
@@ -484,6 +489,7 @@ pub async fn start_recording(
         --recv-video-scale-height=640 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+            ! videoscale \
             ! x264enc \
             ! video/x-h264,profile=main \
             ! flvmux streamable=true name=mux \
@@ -498,6 +504,7 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+           ! videoscale \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -520,6 +527,7 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='compositor name=video background=black \
+           ! videoscale \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
@@ -533,8 +541,8 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
-           ! x264enc \
            ! videoscale
+           ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
