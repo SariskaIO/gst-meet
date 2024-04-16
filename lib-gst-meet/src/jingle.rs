@@ -913,7 +913,6 @@ impl JingleSession {
                 .context("decoder has no src pad")?,
               MediaType::Video => {
                 let videoscale = gstreamer::ElementFactory::make("videoscale").build()?;
-                videoscale.set_property_from_str("add-borders", &true.to_string());
                 pipeline
                   .add(&videoscale)
                   .context("failed to add videoscale to pipeline")?;
@@ -922,25 +921,32 @@ impl JingleSession {
                   .link(&videoscale)
                   .context("failed to link decoder to videoscale")?;
 
-                // let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
+                let capsfilter = gstreamer::ElementFactory::make("capsfilter").build()?;
+                let mut width = conference.config.recv_video_scale_width as u32;
+                let mut height = conference.config.recv_video_scale_height as u32;
 
-                // capsfilter.set_property_from_str(
-                //   "caps",
-                //   &format!(
-                //     "video/x-raw" // , width={}, height={}",
-                //                   // conference.config.recv_video_scale_width,
-                //                   // conference.config.recv_video_scale_height
-                //   ),
-                // );
-                // pipeline
-                //   .add(&capsfilter)
-                //   .context("failed to add capsfilter to pipeline")?;
-                // capsfilter.sync_state_with_parent()?;
+                width = (width + 1) & !1; // Round up to the nearest even number
+                height = (height + 1) & !1; // Round up to the nearest even number
 
-                // videoscale
-                //   .link(&capsfilter)
-                //   .context("failed to link videoscale to capsfilter")?;
-                // videoscale.set_property_from_str("add-borders", &true.to_string());
+                info!("Width of source: {:?}", width);
+                info!("Height of source: {:?}", height);
+
+                capsfilter.set_property_from_str(
+                  "caps",
+                  &format!(
+                      "video/x-raw,width={},height={}",
+                      width, height
+                  ),
+              );
+                pipeline
+                  .add(&capsfilter)
+                  .context("failed to add capsfilter to pipeline")?;
+                capsfilter.sync_state_with_parent()?;
+
+                videoscale
+                  .link(&capsfilter)
+                  .context("failed to link videoscale to capsfilter")?;
+                videoscale.set_property_from_str("add-borders", &true.to_string());
 
                 let videoconvert = gstreamer::ElementFactory::make("videoconvert").build()?;
                 pipeline
@@ -1013,14 +1019,13 @@ impl JingleSession {
                     let height = conference.config.recv_video_scale_height.clone() as i32;
 
                     for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
-                      let row = if width > height{
+                      let row = if width > height {
                         (index / HALF)
                       } else {
-                        (index % HALF) 
+                        (index % HALF)
                       };
-                      let col = if width > height
-                      {
-                        (index % HALF) 
+                      let col = if width > height {
+                        (index % HALF)
                       } else {
                         (index / HALF)
                       };
@@ -1029,8 +1034,14 @@ impl JingleSession {
                       let ypos = (row as i32 * height);
 
                       // If the number of sink elements are odd, use grid layout
-                      if sink_element_size % HALF == 0 || sink_element_size == 1{
-                        set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
+                      if sink_element_size % HALF == 0 || sink_element_size == 1 {
+                        set_properties_for_sink_pad_element(
+                          sink_element,
+                          width,
+                          height,
+                          xpos,
+                          ypos,
+                        );
                       }
 
                       // If the number of sink elemets 3, then the logic needs to be custom
@@ -1038,17 +1049,21 @@ impl JingleSession {
                         3 => {
                           let (x_offset, y_offset) = match index {
                             0 => (0, 0),
-                            1 => (width / HALF as i32 , 0),
+                            1 => (width / HALF as i32, 0),
                             2 => (width / QUARTER as i32, height / HALF as i32),
                             _ => unreachable!(),
                           };
-                          set_properties_for_sink_pad_element(sink_element, width / HALF as i32, 
-                            height / HALF as i32,  x_offset, y_offset);
-                        }
+                          set_properties_for_sink_pad_element(
+                            sink_element,
+                            width / HALF as i32,
+                            height / HALF as i32,
+                            x_offset,
+                            y_offset,
+                          );
+                        },
                         _ => info!("More than four participants, don't know what to do"),
                       }
                     }
-                  
                   },
                 }
 
