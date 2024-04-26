@@ -198,6 +198,12 @@ pub struct SetRoomInfo {
     pub room_name: String,
 }
 
+impl<T: fmt::Debug> fmt::Debug for web::Json<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
 pub async fn start_recording( 
         _req: HttpRequest,
         params: web::Json<Params>,
@@ -218,6 +224,7 @@ pub async fn start_recording(
     let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
     let token = _split[1].trim();
 
+    println!("{:?}", params);
     println!("{}/{}", token, params.room_name);
     set_var("ROOM_NAME", &params.room_name.clone().to_string());
     set_var("AUTH_TOKEN", &token.clone().to_string());
