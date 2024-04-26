@@ -198,12 +198,6 @@ pub struct SetRoomInfo {
     pub room_name: String,
 }
 
-impl<T: fmt::Debug> fmt::Debug for web::Json<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self.0, f)
-    }
-}
-
 pub async fn start_recording( 
         _req: HttpRequest,
         params: web::Json<Params>,
