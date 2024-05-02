@@ -26,6 +26,7 @@ use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
+use tracing::{error, info, trace, warn};
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<Option<String>, redis::RedisError>")]
@@ -381,22 +382,27 @@ pub async fn start_recording(
 
     if is_low_latency {
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
+        println!("Started location: {}", location);
     }
 
     if is_low_latency && codec == "H265" {
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
+        println!("Started location: {}", location);
     }
 
     if multi_bitrate  {
         location = format!("{}?vhost={}&param={}", location,"transcode".to_string(), encoded);
+        println!("Started location: {}", location);
     }
 
     if multi_bitrate && is_low_latency  {
         location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
+        println!("Started location: {}", location);
     }
 
     if multi_bitrate && is_low_latency && codec == "H265"  {
         location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
+        println!("Started location: {}", location);
     }
 
     if layout == "mobile"  {
