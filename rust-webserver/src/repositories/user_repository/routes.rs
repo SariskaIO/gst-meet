@@ -376,8 +376,8 @@ pub async fn start_recording(
     let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
 
-    let scalingWidth =  1080
-    let scalingHeight =  720
+    let mut scalingWidth =  1080; 
+    let mut scalingHeight =  720; 
 
     if is_low_latency {
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
@@ -399,9 +399,9 @@ pub async fn start_recording(
         location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
     }
 
-    if mobile  {
-        scalingWidth =  320
-        scalingHeight = 640
+    if layout == "mobile"  {
+        scalingWidth =  320;
+        scalingHeight = 640;
     }
 
     if audio_only { // audio only streaming
