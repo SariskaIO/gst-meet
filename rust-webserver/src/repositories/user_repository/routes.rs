@@ -26,7 +26,6 @@ use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
-use tracing::{error, info, trace, warn};
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<Option<String>, redis::RedisError>")]
