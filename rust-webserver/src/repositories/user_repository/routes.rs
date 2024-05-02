@@ -405,8 +405,8 @@ pub async fn start_recording(
     }
 
     if audio_only { // audio only streaming
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
+        // location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+        // location = format!("{}?param={}", location, encoded);
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --room-name={} \
@@ -414,8 +414,8 @@ pub async fn start_recording(
            ! flvmux streamable=true  name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     } else if video_only { // video only streaming
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
+        // location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+        // location = format!("{}?param={}", location, encoded);
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --recv-video-scale-width={} \
@@ -425,12 +425,12 @@ pub async fn start_recording(
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, scalingWidth, scalingHeight, location);
+           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, scalingWidth, scalingHeight, params.room_name, location);
     } else { // streaming for rest of the options
         gstreamer_pipeline = format!(
         "/usr/local/bin/gst-meet \
         --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={} \
+        --xmpp-domain={} \ 
         --muc-domain={} \
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
@@ -442,9 +442,9 @@ pub async fn start_recording(
         API_HOST,
         XMPP_DOMAIN,
         XMPP_MUC_DOMAIN,
-        params.room_name,
         scalingWidth,
         scalingHeight,
+        params.room_name,
         location);
     }
 
