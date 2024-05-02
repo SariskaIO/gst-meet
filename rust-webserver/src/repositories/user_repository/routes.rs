@@ -394,6 +394,8 @@ pub async fn start_recording(
     }else if multi_bitrate  {
         location = format!("{}?vhost={}&param={}", location,"transcode".to_string(), encoded);
         println!("Started location: {}", location);
+    }else{
+        location = format!("{}?param={}", location, encoded);
     }
     
     if layout == "mobile"  {
