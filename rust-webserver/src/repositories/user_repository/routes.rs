@@ -169,7 +169,7 @@ struct ResponseVideoStart {
     stream_name: String,
     pod_name: String,
     hls_url: Option<String>,
-    hls_cdn_url: Option<String,
+    hls_cdn_url: Option<String>,
     hls_master_url: Option<String>,
     hls_master_cdn_url: Option<String>,
     low_latency_hls_url: Option<String>,
