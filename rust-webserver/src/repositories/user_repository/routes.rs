@@ -422,6 +422,7 @@ pub async fn start_recording(
         --recv-video-scale-height={} \
         --room-name={} \
         --recv-pipeline='compositor name=video background=black \
+           ! videoscale \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
@@ -430,13 +431,14 @@ pub async fn start_recording(
         gstreamer_pipeline = format!(
         "/usr/local/bin/gst-meet \
         --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={} \ 
+        --xmpp-domain={} \
         --muc-domain={} \
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
         compositor name=video background=black \
+        ! videoscale \
         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
         flvmux streamable=true name=mux ! rtmpsink location={}'",
         API_HOST,
