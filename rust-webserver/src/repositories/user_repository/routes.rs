@@ -449,6 +449,7 @@ pub async fn start_recording(
         location);
     }
 
+    println("RTMP Location: ", location.clone());
     
     let child = Command::new("sh")
     .arg("-c")
