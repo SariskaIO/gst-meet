@@ -439,7 +439,10 @@ pub async fn start_recording(
         compositor name=video background=black \
         ! videoscale \
         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
-        flvmux streamable=true name=mux ! rtmpsink location={}'",
+        flvmux streamable=true name=mux ! rtmpsink location={}'
+        --send-pipeline='autovideosrc ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video \
+                        autoaudiosrc ! queue ! audioconvert ! audioresample ! opusenc name=audio'
+        ",
         API_HOST,
         XMPP_DOMAIN,
         XMPP_MUC_DOMAIN,
