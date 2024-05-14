@@ -435,15 +435,13 @@ pub async fn start_recording(
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
         --room-name={} \
+        --send-pipeline='autovideosrc ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video
+        autoaudiosrc ! queue ! audioconvert ! audioresample ! opusenc name=audio' 
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
         compositor name=video background=black \
         ! videoscale \
         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
         flvmux streamable=true name=mux ! rtmpsink location={}'
-        --send-pipeline='curlhttpsrc location=\"$(youtube-dl -g https://www.youtube.com/watch?v=vjV_2Ri2rfE -f 'bestaudio[acodec=opus]')\" ! queue ! matroskademux name=audiodemux \
-                          curlhttpsrc location=\"$(youtube-dl -g https://www.youtube.com/watch?v=vjV_2Ri2rfE -f 'bestvideo[vcodec=vp9]')\" ! queue ! matroskademux name=videodemux \
-                          audiodemux.audio_0 ! queue ! clocksync name=audio \
-                          videodemux.video_0 ! queue ! clocksync name=video'
         ",
         API_HOST,
         XMPP_DOMAIN,
