@@ -435,8 +435,7 @@ pub async fn start_recording(
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
         --room-name={} \
-        --send-pipeline='autovideosrc ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video
-        autoaudiosrc ! queue ! audioconvert ! audioresample ! opusenc name=audio' 
+        --send-pipeline='uridecodebin uri=rtmp://streaming-edge-nlb-tcp-bbc5ae3a0d2cb7a3.elb.ap-south-1.amazonaws.com:1935/puc1mr225j4wbqj9/4cghhsdqn5x505ng ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video autoaudiosrc ! queue ! audioconvert ! audioresample ! opusenc name=audio' \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
         compositor name=video background=black \
         ! videoscale \
