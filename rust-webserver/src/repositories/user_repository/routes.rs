@@ -427,7 +427,6 @@ pub async fn start_recording(
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, scalingWidth, scalingHeight, params.room_name, location);
     } else { // streaming for rest of the options
-        let YOUTUBE_URL="https://www.youtube.com/watch?v=vjV_2Ri2rfE"
         gstreamer_pipeline = format!(
         "/usr/local/bin/gst-meet \
         --web-socket-url=wss://{}/api/v1/media/websocket \
