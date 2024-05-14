@@ -375,6 +375,7 @@ async fn main_inner() -> Result<()> {
 
   if let Some(bin) = send_pipeline {
     conference.add_bin(&bin).await?;
+    info!("Random Random Random herer");
 
     // Link audio compositor to audio sink element
     if let Some(audio) = bin.by_name("audio") {

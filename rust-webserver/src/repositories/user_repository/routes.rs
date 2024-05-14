@@ -427,6 +427,7 @@ pub async fn start_recording(
            ! flvmux streamable=true name=mux \
            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, scalingWidth, scalingHeight, params.room_name, location);
     } else { // streaming for rest of the options
+        let YOUTUBE_URL="https://www.youtube.com/watch?v=vjV_2Ri2rfE"
         gstreamer_pipeline = format!(
         "/usr/local/bin/gst-meet \
         --web-socket-url=wss://{}/api/v1/media/websocket \
@@ -440,8 +441,10 @@ pub async fn start_recording(
         ! videoscale \
         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
         flvmux streamable=true name=mux ! rtmpsink location={}'
-        --send-pipeline='autovideosrc ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video \
-                        autoaudiosrc ! queue ! audioconvert ! audioresample ! opusenc name=audio'
+        --send-pipeline='curlhttpsrc location=\"$(youtube-dl -g https://www.youtube.com/watch?v=vjV_2Ri2rfE -f 'bestaudio[acodec=opus]')\" ! queue ! matroskademux name=audiodemux \
+                          curlhttpsrc location=\"$(youtube-dl -g https://www.youtube.com/watch?v=vjV_2Ri2rfE -f 'bestvideo[vcodec=vp9]')\" ! queue ! matroskademux name=videodemux \
+                          audiodemux.audio_0 ! queue ! clocksync name=audio \
+                          videodemux.video_0 ! queue ! clocksync name=video'
         ",
         API_HOST,
         XMPP_DOMAIN,
