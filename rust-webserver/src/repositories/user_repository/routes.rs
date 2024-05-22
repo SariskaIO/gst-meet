@@ -71,7 +71,8 @@ use libc::{kill, SIGTERM};
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Addr<RedisActor>
+    pub conn: Addr<RedisActor>,
+    pub is_recording: Arc<AtomicBool>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -212,17 +213,19 @@ pub async fn start_recording(
         Some(v) => v,
         _ => false,
     };
-    
-    {
-        let mut state = app_state.write().unwrap();
-        if state.is_recording {
-            return HttpResponse::NotFound().finish();
-        }
-        state.is_recording = true;
+
+    if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
+        Continue;
+    } else {
+        HttpResponse::NotFound().json(json!({"status": "recording already started"}))
     }
+    
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
+
+    println!("is recording? :: {}", is_recording);
+    
     let _auth = _req.headers().get("Authorization");
 
     let mut location;

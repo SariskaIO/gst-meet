@@ -155,7 +155,7 @@ async fn main() -> std::io::Result<()> {
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
                     conn: addr.clone(),
-                    is_recording: bool
+                    is_recording: Arc::new(AtomicBool::new(false))
             })).clone())
             .service(web::resource("/user/startRecording").route(web::post().to(repositories::user_repository::start_recording)))
             .service(web::resource("/user/stopRecording").route(web::post().to(repositories::user_repository::stop_recording)))
