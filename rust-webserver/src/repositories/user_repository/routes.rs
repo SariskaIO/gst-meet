@@ -216,7 +216,8 @@ pub async fn start_recording(
     };
 
     {
-        let mut is_recording = app_state.is_recording.write().unwrap();
+        let mut state = app_state.write().unwrap();
+        let mut is_recording = state.is_recording.write().unwrap();
         if *is_recording {
             return HttpResponse::NotFound().finish();
         }
