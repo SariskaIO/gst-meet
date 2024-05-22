@@ -219,6 +219,7 @@ pub async fn start_recording(
     } else {
         return HttpResponse::NotFound().json(json!({"status": "recording already started"}));
     }
+
     
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
