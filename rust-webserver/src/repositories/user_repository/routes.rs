@@ -217,7 +217,7 @@ pub async fn start_recording(
     if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
         Continue;
     } else {
-        HttpResponse::NotFound().json(json!({"status": "recording already started"}))
+        return HttpResponse::NotFound().json(json!({"status": "recording already started"}));
     }
     
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
