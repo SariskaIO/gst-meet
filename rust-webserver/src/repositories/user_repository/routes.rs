@@ -212,12 +212,11 @@ pub async fn start_recording(
         Some(v) => v,
         _ => false,
     };
-    let mut state = app_state.write().unwrap();
-    if *state.is_recording {
+    let mut is_recording = &app_state.read().unwrap().is_recording;
+    if is_recording {
         return HttpResponse::NotFound().finish();
     }
-
-    *state.is_recording = true;
+    is_recording = true;
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
