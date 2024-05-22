@@ -214,14 +214,14 @@ pub async fn start_recording(
         _ => false,
     };
 
-    let mut state = app_state.write().unwrap();
-    if *state.is_recording {
-        HttpResponse::NotFound().finish();
-    } else {
-        *state.is_recording = true;
-        // Your logic for starting the recording goes here
-        // HttpResponse::Ok().body("Recording started");
+    {
+        let mut state = app_state.write().unwrap();
+        if *state.is_recording.read().unwrap() {
+            return HttpResponse::NotFound().finish();
+        }
+        *state.is_recording.write().unwrap() = true;
     }
+
 
     // if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
     //     Continue;
