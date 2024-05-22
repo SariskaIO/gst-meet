@@ -26,6 +26,7 @@ use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<Option<String>, redis::RedisError>")]
@@ -71,7 +72,8 @@ use libc::{kill, SIGTERM};
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Addr<RedisActor>
+    pub conn: Addr<RedisActor>,
+    pub is_recording: Arc<RwLock<bool>>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -208,6 +210,16 @@ pub async fn start_recording(
         Some(v) => v,
         _ => false,
     };
+
+    {
+        let mut state = app_state.write().unwrap();
+        let mut is_recording = state.is_recording.write().unwrap();
+        if *is_recording {
+            return HttpResponse::NotFound().finish();
+        }
+        *is_recording = true;
+    }
+    
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;

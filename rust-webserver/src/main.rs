@@ -20,6 +20,7 @@ use libc::{kill, SIGTERM};
 use serde_json::Error;
 use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
+use std::sync::Arc;
 
 impl RedisActor {
     pub async fn new(redis_url: String) -> Self {
@@ -154,7 +155,8 @@ async fn main() -> std::io::Result<()> {
             .app_data( 
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
-                    conn: addr.clone()
+                    conn: addr.clone(),
+                    is_recording: Arc::new(RwLock::new(false))
             })).clone())
             .service(web::resource("/user/startRecording").route(web::post().to(repositories::user_repository::start_recording)))
             .service(web::resource("/user/stopRecording").route(web::post().to(repositories::user_repository::stop_recording)))
