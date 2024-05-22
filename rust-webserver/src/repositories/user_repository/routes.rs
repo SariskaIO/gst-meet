@@ -65,6 +65,7 @@ pub struct RedisActor {
 }
 
 use std::{collections::HashMap, sync::RwLock};
+use std::sync::{Arc};
 use libc::{kill, SIGTERM};
 
 // This struct represents state
@@ -72,7 +73,7 @@ use libc::{kill, SIGTERM};
 pub struct AppState {
     pub map: HashMap<String,  String>,
     pub conn: Addr<RedisActor>,
-    pub is_recording: RwLock<bool>
+    pub is_recording: Arc<RwLock<bool>>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -203,7 +204,7 @@ pub struct SetRoomInfo {
     pub room_name: String,
 }
 
-pub async fn start_recording( 
+pub async fn start_recording(
         _req: HttpRequest,
         params: web::Json<Params>,
         app_state: web::Data<RwLock<AppState>>
@@ -215,13 +216,12 @@ pub async fn start_recording(
     };
 
     {
-        let mut state = app_state.write().unwrap();
-        if *state.is_recording.read().unwrap() {
+        let mut is_recording = app_state.is_recording.write().unwrap();
+        if *is_recording {
             return HttpResponse::NotFound().finish();
         }
-        *state.is_recording.write().unwrap() = true;
+        *is_recording = true;
     }
-
 
     // if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
     //     Continue;
