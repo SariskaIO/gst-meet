@@ -65,7 +65,7 @@ pub struct RedisActor {
 }
 
 use std::{collections::HashMap, sync::RwLock};
-use std::sync::{Arc};
+use std::sync::Arc;
 use libc::{kill, SIGTERM};
 
 // This struct represents state
@@ -224,17 +224,9 @@ pub async fn start_recording(
         *is_recording = true;
     }
 
-    // if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
-    //     Continue;
-    // } else {
-    //     return HttpResponse::NotFound().json(json!({"status": "recording already started"}));
-    // }
-    
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
-
-    println!("is recording? :: {}", is_recording);
     
     let _auth = _req.headers().get("Authorization");
 

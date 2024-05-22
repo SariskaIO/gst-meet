@@ -20,6 +20,7 @@ use libc::{kill, SIGTERM};
 use serde_json::Error;
 use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
+use std::sync::Arc;
 
 impl RedisActor {
     pub async fn new(redis_url: String) -> Self {
