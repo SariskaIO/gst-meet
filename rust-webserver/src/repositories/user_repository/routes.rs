@@ -72,7 +72,7 @@ use libc::{kill, SIGTERM};
 pub struct AppState {
     pub map: HashMap<String,  String>,
     pub conn: Addr<RedisActor>,
-    pub is_recording: Arc<AtomicBool>
+    pub is_recording: RwLock<bool>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -214,12 +214,20 @@ pub async fn start_recording(
         _ => false,
     };
 
-    if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
-        Continue;
+    let mut state = app_state.write().unwrap();
+    if *state.is_recording {
+        HttpResponse::NotFound().finish();
     } else {
-        return HttpResponse::NotFound().json(json!({"status": "recording already started"}));
+        *state.is_recording = true;
+        // Your logic for starting the recording goes here
+        // HttpResponse::Ok().body("Recording started");
     }
 
+    // if app_state.read().unwrap().is_recording.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
+    //     Continue;
+    // } else {
+    //     return HttpResponse::NotFound().json(json!({"status": "recording already started"}));
+    // }
     
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
