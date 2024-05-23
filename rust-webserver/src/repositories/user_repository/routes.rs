@@ -213,13 +213,16 @@ pub async fn start_recording(
 
     println!("Random Random Random3");
     let mut state = app_state.write().unwrap();
-
+    println!("Random Random Random4");
     if state.is_recording.load(Ordering::SeqCst){
+        println!("Random Random Random5");
         return HttpResponse::NotFound().finish();
     }else {
+        println!("Random Random Random6");
         state.is_recording.store(true, Ordering::SeqCst);
     }
 
+    println!("Random Random Random7");
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
