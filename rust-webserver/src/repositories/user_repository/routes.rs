@@ -26,7 +26,7 @@ use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
-use std::sync::Arc;
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<Option<String>, redis::RedisError>")]
@@ -73,7 +73,7 @@ use libc::{kill, SIGTERM};
 pub struct AppState {
     pub map: HashMap<String,  String>,
     pub conn: Addr<RedisActor>,
-    pub is_recording: Arc<RwLock<bool>>
+    pub is_recording: Arc<AtomicBool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -211,15 +211,12 @@ pub async fn start_recording(
         _ => false,
     };
 
-    {
-        println!("Here ye here ye");
-        let mut state = app_state.write().unwrap();
-        let mut is_recording = state.is_recording.write().unwrap();
-        if *is_recording {
-            println!("Here to the wild one");
-            return HttpResponse::NotFound().finish();
-        }
-        *is_recording = true;
+    let mut state = app_state.write().unwrap();
+
+    if state.is_recording.load(Ordering::SeqCst){
+        HttpResponse::NotFound().body("Recording already started")
+    }else {
+        state.is_recording.store(true, Ordering::SeqCst);
     }
 
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
