@@ -211,6 +211,7 @@ pub async fn start_recording(
         _ => false,
     };
 
+    println!("Random Random Random3");
     let mut state = app_state.write().unwrap();
 
     if state.is_recording.load(Ordering::SeqCst){

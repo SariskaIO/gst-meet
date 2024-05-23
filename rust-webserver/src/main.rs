@@ -150,15 +150,16 @@ async fn main() -> std::io::Result<()> {
     let redis_url: String = env::var("REDIS_URL_GSTREAMER_PIPELINE").unwrap_or("none".to_string());
     let actor = RedisActor::new(redis_url).await;
     let addr = actor.start();
-    let is_recording = Arc::new(AtomicBool::new(false));
-    
+    println!("Random Random Random 1");
+    let is_recording_new = Arc::new(AtomicBool::new(false));
+    println!("Random Random Random 2");
     HttpServer::new(move || {
         App::new()
             .app_data( 
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
                     conn: addr.clone(),
-                    is_recording: is_recording.clone()
+                    is_recording: is_recording_new.clone()
             })).clone())
             .service(web::resource("/user/startRecording").route(web::post().to(repositories::user_repository::start_recording)))
             .service(web::resource("/user/stopRecording").route(web::post().to(repositories::user_repository::stop_recording)))
