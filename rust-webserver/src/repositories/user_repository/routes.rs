@@ -214,7 +214,7 @@ pub async fn start_recording(
     let mut state = app_state.write().unwrap();
 
     if state.is_recording.load(Ordering::SeqCst){
-        HttpResponse::NotFound().body("Recording already started")
+        return HttpResponse::NotFound().finish();
     }else {
         state.is_recording.store(true, Ordering::SeqCst);
     }
