@@ -168,4 +168,5 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
+    println!("Random Random Random 3");
 }
