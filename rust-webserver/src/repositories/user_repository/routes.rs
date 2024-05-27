@@ -372,11 +372,7 @@ pub async fn start_recording(
     if layout == "mobile" {  
         set_var("LAYOUT", "mobile");
     }
-
-    if resolution == "HD" {
-        set_var("PROFILE", "HD");
-    }
-
+    
     if username {  
         set_var("USERNAME", "true");
     }
@@ -571,7 +567,7 @@ pub async fn start_recording(
 
 fn create_response_start_video(app: String, stream: String, uuid: String, is_low_latency: bool, codec: String, is_vod: bool, multi_bitrate: bool) -> serde_json::Value {
     let HLS_HOST = env::var("HLS_HOST").unwrap_or("none".to_string());
-    let HLS_HOST_CDN = env::var("HLS_HOST_CDN").unwrap_or("nonde".to_string()); // new cdn host for normal hls
+    let HLS_HOST_CDN = env::var("HLS_HOST_CDN").unwrap_or("none".to_string()); // new cdn host for normal hls
     let LOW_LATENCY_HLS_HOST = env::var("LOW_LATENCY_HLS_HOST").unwrap_or("none".to_string());
     let LOW_LATENCY_HLS_HOST_CDN = env::var("LOW_LATENCY_HLS_HOST_CDN").unwrap_or("none".to_string()); // new cdn host for low latency
     let VOD_HOST = env::var("VOD_HOST").unwrap_or("none".to_string());
@@ -582,7 +578,7 @@ fn create_response_start_video(app: String, stream: String, uuid: String, is_low
     "H264" => "ll_latency_h264",
     "H265" => "ll_latency_h265",
     _ => LOW_LATENCY_HLS_HOST.as_str(),
-};
+    };
 
 if multi_bitrate && is_low_latency {
     if codec == "H264" {
