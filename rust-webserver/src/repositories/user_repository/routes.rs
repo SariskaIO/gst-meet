@@ -172,9 +172,13 @@ struct ResponseVideoStart {
     stream_name: String,
     pod_name: String,
     hls_url: Option<String>,
+    hls_cdn_url: Option<String>,
     hls_master_url: Option<String>,
+    hls_master_cdn_url: Option<String>,
     low_latency_hls_url: Option<String>,
+    low_latency_hls_cdn_url: Option<String>,
     low_latency_hls_master_url: Option<String>,
+    low_latency_hls_master_cdn_url: Option<String>,
     vod_url: Option<String>,
     rtmp_url: Option<String>,
     flv_url: Option<String>,
@@ -213,19 +217,14 @@ pub async fn start_recording(
     };
 
     {
-        println!("Random Random Random3");
         let mut state = app_state.write().unwrap();
-        println!("Random Random Random4");
         if state.is_recording.load(Ordering::SeqCst){
-            println!("Random Random Random5");
             return HttpResponse::NotFound().finish();
         }else {
-            println!("Random Random Random6");
             state.is_recording.store(true, Ordering::SeqCst);
         }
     }
 
-    println!("Random Random Random7");
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
@@ -372,6 +371,10 @@ pub async fn start_recording(
 
     if layout == "mobile" {  
         set_var("LAYOUT", "mobile");
+    }
+
+    if resolution == "HD" {
+        set_var("PROFILE", "HD");
     }
 
     if username {  
@@ -568,7 +571,9 @@ pub async fn start_recording(
 
 fn create_response_start_video(app: String, stream: String, uuid: String, is_low_latency: bool, codec: String, is_vod: bool, multi_bitrate: bool) -> serde_json::Value {
     let HLS_HOST = env::var("HLS_HOST").unwrap_or("none".to_string());
+    let HLS_HOST_CDN = env::var("HLS_HOST_CDN").unwrap_or("nonde".to_string()); // new cdn host for normal hls
     let LOW_LATENCY_HLS_HOST = env::var("LOW_LATENCY_HLS_HOST").unwrap_or("none".to_string());
+    let LOW_LATENCY_HLS_HOST_CDN = env::var("LOW_LATENCY_HLS_HOST_CDN").unwrap_or("none".to_string()); // new cdn host for low latency
     let VOD_HOST = env::var("VOD_HOST").unwrap_or("none".to_string());
     let EDGE_UDP_PLAY = env::var("EDGE_UDP_PLAY").unwrap_or("none".to_string());
     let EDGE_TCP_PLAY = env::var("EDGE_TCP_PLAY").unwrap_or("none".to_string());
@@ -593,9 +598,13 @@ if multi_bitrate && is_low_latency {
         "stream_name": app.clone(),
         "pod_name": env::var("MY_POD_NAME").unwrap_or("none".to_string()),
         "hls_url": None::<Value>,
+        "hls_cdn_url": None::<Value>,
         "hls_master_url": None::<Value>,
+        "hls_master_cdn_url": None::<Value>,
         "low_latency_hls_url": None::<Value>,
+        "low_latency_hls_url_cdn": None::<Value>,
         "low_latency_hls_master_url": None::<Value>,
+        "low_latency_hls_master_url_cdn": None::<Value>,
         "vod_url": None::<Value>,
         "rtmp_url": None::<Value>,
         "flv_url": None::<Value>,
@@ -607,12 +616,16 @@ if multi_bitrate && is_low_latency {
     
     if is_low_latency && multi_bitrate {
         obj["low_latency_hls_master_url"] = json!(format!("https://{}/multi/{}/{}/master.m3u8", LOW_LATENCY_HLS_HOST, app, stream));
+        obj["low_latency_hls_master_cdn_url"] = json!(format!("https://{}/multi/{}/{}/master.m3u8", LOW_LATENCY_HLS_HOST_CDN, app, stream));
     } else if is_low_latency {
         obj["low_latency_hls_url"] = json!(format!("https://{}/original/{}/{}/playlist.m3u8", LOW_LATENCY_HLS_HOST, app, stream));
+        obj["low_latency_hls_cdn_url"] = json!(format!("https://{}/original/{}/{}/playlist.m3u8", LOW_LATENCY_HLS_HOST_CDN, app, stream));
     } else if multi_bitrate {
         obj["hls_master_url"] = json!(format!("https://{}/play/hls/{}/{}/master.m3u8", HLS_HOST, app, stream));
+        obj["hls_master_cdn_url"] = json!(format!("https://{}/play/hls/{}/{}/master.m3u8", HLS_HOST_CDN, app, stream));
     } else {
         obj["hls_url"] = json!(format!("https://{}/play/hls/{}/{}.m3u8", HLS_HOST, app, stream));
+        obj["hls_cdn_url"] = json!(format!("https://{}/play/hls/{}/{}.m3u8", HLS_HOST_CDN, app, stream));
     } 
     
     if is_low_latency && multi_bitrate {
@@ -620,8 +633,7 @@ if multi_bitrate && is_low_latency {
         obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
     } else if is_low_latency {
         obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
-        obj["flv_url"] =
- json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
     } else if multi_bitrate {
         obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
         obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
