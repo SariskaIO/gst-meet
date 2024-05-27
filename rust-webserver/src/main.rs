@@ -20,6 +20,7 @@ use libc::{kill, SIGTERM};
 use serde_json::Error;
 use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 
 impl RedisActor {
     pub async fn new(redis_url: String) -> Self {
@@ -149,12 +150,15 @@ async fn main() -> std::io::Result<()> {
     let redis_url: String = env::var("REDIS_URL_GSTREAMER_PIPELINE").unwrap_or("none".to_string());
     let actor = RedisActor::new(redis_url).await;
     let addr = actor.start();
+    let is_recording = Arc::new(AtomicBool::new(false));
+    println!("Random Random Random 1");
     HttpServer::new(move || {
         App::new()
             .app_data( 
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
-                    conn: addr.clone()
+                    conn: addr.clone(),
+                    is_recording: is_recording.clone()
             })).clone())
             .service(web::resource("/user/startRecording").route(web::post().to(repositories::user_repository::start_recording)))
             .service(web::resource("/user/stopRecording").route(web::post().to(repositories::user_repository::stop_recording)))

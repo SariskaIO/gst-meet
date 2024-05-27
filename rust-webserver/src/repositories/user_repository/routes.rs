@@ -26,6 +26,7 @@ use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<Option<String>, redis::RedisError>")]
@@ -71,8 +72,10 @@ use libc::{kill, SIGTERM};
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Addr<RedisActor>
+    pub conn: Addr<RedisActor>,
+    pub is_recording: Arc<AtomicBool>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
@@ -208,6 +211,21 @@ pub async fn start_recording(
         Some(v) => v,
         _ => false,
     };
+
+    {
+        println!("Random Random Random3");
+        let mut state = app_state.write().unwrap();
+        println!("Random Random Random4");
+        if state.is_recording.load(Ordering::SeqCst){
+            println!("Random Random Random5");
+            return HttpResponse::NotFound().finish();
+        }else {
+            println!("Random Random Random6");
+            state.is_recording.store(true, Ordering::SeqCst);
+        }
+    }
+
+    println!("Random Random Random7");
     let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
     let mut redis_actor = &app_state.read().unwrap().conn;
