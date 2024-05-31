@@ -544,11 +544,11 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --send-pipeline='uridecodebin uri=rtmp://streaming-edge-nlb-tcp-dev-760d448ad065fee5.elb.ap-south-1.amazonaws.com:1935/zofk1hv2qv8o5lmx/xffcser6zee1v6r2 ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! x264enc speed-preset=ultrafast tune=zerolatency name=video' \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
-           ! x264enc \
-           ! video/x-h264,profile=main \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+        compositor name=video background=black \
+        ! videoscale \
+        ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
+        flvmux streamable=true name=mux ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }
 
     //
