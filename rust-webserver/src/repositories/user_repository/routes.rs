@@ -548,7 +548,7 @@ pub async fn start_recording(
         compositor name=video background=black \
         ! videoscale \
         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
-        flvmux streamable=true name=mux ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
+        flvmux streamable=true name=mux ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
     }
 
     //
