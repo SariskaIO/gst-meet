@@ -555,13 +555,13 @@ impl JingleSession {
     pipeline.add(&nicesrc)?;
 
     // Create the RTMP source element
-    let rtmpsrc = gstreamer::ElementFactory::make("rtmpsrc")?
+    let rtmpsrc = gstreamer::ElementFactory::make("rtmpsrc")
         .property("location", "rtmp://streaming-edge-nlb-tcp-dev-760d448ad065fee5.elb.ap-south-1.amazonaws.com:1935/zofk1hv2qv8o5lmx/xffcser6zee1v6r2")
         .build()?;
     pipeline.add(&rtmpsrc)?;
 
     // Create the decodebin element to decode the RTMP stream
-    let decodebin = gstreamer::ElementFactory::make("decodebin")?
+    let decodebin = gstreamer::ElementFactory::make("decodebin")
         .build()?;
     pipeline.add(&decodebin)?;
 
