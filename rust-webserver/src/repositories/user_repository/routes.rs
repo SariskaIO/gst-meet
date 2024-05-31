@@ -394,6 +394,8 @@ pub async fn start_recording(
         String::new()
     };
 
+    println!("Send pipeline is: ()", send_pipeline);
+
     if resolution == "HD" { // high definition streaming
         set_var("PROFILE", "HD");
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
