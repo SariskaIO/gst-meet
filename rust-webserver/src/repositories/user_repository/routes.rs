@@ -360,7 +360,7 @@ pub async fn start_recording(
     let ingest_url = match params.ingest_url{
         Some<v> => v,
         _ => false,
-    }
+    };
 
     let video_only = match params.video_only {
         Some(v) => v,
