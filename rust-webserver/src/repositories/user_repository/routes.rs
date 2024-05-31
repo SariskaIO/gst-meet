@@ -388,7 +388,7 @@ pub async fn start_recording(
     let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
     let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
-    let send_pipeline = if let Some(ref ingest_url) = ingest_url {
+    let send_pipeline = if !ingest_url.is_empty() {
         format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! x264enc speed-preset=ultrafast tune=zerolatency name=video'", ingest_url)
     } else {
         String::new()
