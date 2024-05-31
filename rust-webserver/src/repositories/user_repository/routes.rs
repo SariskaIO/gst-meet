@@ -389,7 +389,7 @@ pub async fn start_recording(
     let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
     let send_pipeline = if !ingest_url.is_empty() {
-        format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! x264enc speed-preset=ultrafast tune=zerolatency name=video'", ingest_url)
+        format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc speed-preset=ultrafast tune=zerolatency buffer-size=1000 deadline=1 name=video'", ingest_url)
     } else {
         String::new()
     };
@@ -543,7 +543,7 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        --send-pipeline='uridecodebin uri=rtmp://streaming-edge-nlb-tcp-dev-760d448ad065fee5.elb.ap-south-1.amazonaws.com:1935/zofk1hv2qv8o5lmx/xffcser6zee1v6r2 ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video' \
+        {} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
         compositor name=video background=black \
         ! videoscale \
