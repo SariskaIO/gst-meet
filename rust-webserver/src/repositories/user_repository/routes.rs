@@ -549,7 +549,7 @@ pub async fn start_recording(
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     }
 
     //
