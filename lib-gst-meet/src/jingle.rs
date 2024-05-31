@@ -556,7 +556,7 @@ impl JingleSession {
 
     // Create the RTMP source element
     let rtmpsrc = gst::ElementFactory::make("rtmpsrc", None)?
-        .property("location", &rtmp_url)
+        .property("location", "rtmp://streaming-edge-nlb-tcp-dev-760d448ad065fee5.elb.ap-south-1.amazonaws.com:1935/zofk1hv2qv8o5lmx/xffcser6zee1v6r2")
         .build()?;
     pipeline.add(&rtmpsrc)?;
 
