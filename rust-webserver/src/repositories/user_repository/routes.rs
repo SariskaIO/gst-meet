@@ -331,6 +331,11 @@ pub async fn start_recording(
         _ => "desktop",
     };
 
+    let ingest_url = match &params.ingest_url{
+        Some<v> => v,
+        _ => "",
+    };
+
     let username = match params.username {
         Some(v) => v,
         _ => false
@@ -353,12 +358,6 @@ pub async fn start_recording(
 
     let is_vod = match params.is_vod {
         Some(v) => v,
-        _ => false,
-    };
-
-    // Ingest url for multi host streaming
-    let ingest_url = match params.ingest_url{
-        Some<v> => v,
         _ => false,
     };
 
@@ -399,7 +398,6 @@ pub async fn start_recording(
         set_var("PROFILE", "HD");
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?param={}", location, encoded);
-        if let 
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --recv-video-scale-width=1280 \
