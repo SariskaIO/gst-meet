@@ -421,7 +421,7 @@ async fn main_inner() -> Result<()> {
     if let Some(video_element) = bin.by_name("video") {
       info!(
         "recv pipeline has a video element, a sink pad will be requested from it for each participant"
-      );
+      ); 
       conference
         .set_remote_participant_video_sink_element(Some(video_element))
         .await;

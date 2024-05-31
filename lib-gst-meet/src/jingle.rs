@@ -554,6 +554,60 @@ impl JingleSession {
       .build()?;
     pipeline.add(&nicesrc)?;
 
+    // Create the RTMP source element
+    let rtmpsrc = gst::ElementFactory::make("rtmpsrc", None)?
+        .property("location", &rtmp_url)
+        .build()?;
+    pipeline.add(&rtmpsrc)?;
+
+    // Create the decodebin element to decode the RTMP stream
+    let decodebin = gst::ElementFactory::make("decodebin", None)?
+        .build()?;
+    pipeline.add(&decodebin)?;
+
+    // Link the RTMP source to the decodebin
+    gst::Element::link_many(&[&rtmpsrc, &decodebin])?;
+
+    // Link the RTMP source to the decodebin
+    gst::Element::link_many(&[&rtmpsrc, &decodebin])?;
+
+    // Connect the decodebin pad-added signal to dynamically link decoded streams
+    let pipeline_weak = pipeline.downgrade();
+    decodebin.connect_pad_added(move |_, src_pad| {
+        if let Some(pipeline) = pipeline_weak.upgrade() {
+            // Create elements for video and audio processing
+            let videoconvert = gst::ElementFactory::make("videoconvert", None).unwrap();
+            let videoscale = gst::ElementFactory::make("videoscale", None).unwrap();
+            let videoenc = gst::ElementFactory::make("x264enc", None).unwrap()
+                .property_from_str("speed-preset", "ultrafast")
+                .property_from_str("tune", "zerolatency");
+            let audioenc = gst::ElementFactory::make("voaacenc", None).unwrap()
+                .property("bitrate", 96000);
+
+            // Add elements to the pipeline
+            pipeline.add_many(&[&videoconvert, &videoscale, &videoenc, &audioenc]).unwrap();
+
+            // Link video elements
+            gst::Element::link_many(&[&videoconvert, &videoscale, &videoenc]).unwrap();
+
+            // Link audio elements
+            gst::Element::link_many(&[&audioenc]).unwrap();
+
+            // Link the decodebin to the appropriate processing chain based on the media type
+            let new_pad_caps = src_pad.current_caps().unwrap();
+            let new_pad_struct = new_pad_caps.structure(0).unwrap();
+            let new_pad_type = new_pad_struct.name();
+
+            if new_pad_type.starts_with("video/") {
+                let sink_pad = videoconvert.static_pad("sink").unwrap();
+                src_pad.link(&sink_pad).unwrap();
+            } else if new_pad_type.starts_with("audio/") {
+                let sink_pad = audioenc.static_pad("sink").unwrap();
+                src_pad.link(&sink_pad).unwrap();
+            }
+        }
+    });
+
     let nicesink = gstreamer::ElementFactory::make("nicesink")
       .property("stream", ice_stream_id)
       .property("component", ice_component_id)
@@ -1053,7 +1107,6 @@ impl JingleSession {
                 }
 
                 // Set the sink name on the source
-
                 let mut random_map = handle.block_on(async {
                   // Use handle.block_on to wait for the lock and access remote_ssrc_map
                   let mut jingle_session_guard = conference.jingle_session.lock().await;
