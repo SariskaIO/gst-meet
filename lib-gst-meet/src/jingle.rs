@@ -580,51 +580,51 @@ impl JingleSession {
       gstreamer::Element::link_many(&[&video_convert_rtmp, &compositor])
         .expect("Video elements could not be linked.");
       gstreamer::Element::link_many(&[&audio_convert_rtmp, &compositor])
-      .expect("Video elements could not be linked.");
+        .expect("Video elements could not be linked.");
+
+      rtmpsrc.connect_pad_added(move |src, src_pad| {
+        println!("Received new pad {} from {}", src_pad.name(), src.name());
+        let new_pad_caps = src_pad
+          .current_caps()
+          .expect("Failed to get caps of new pad.");
+        let new_pad_struct = new_pad_caps
+          .structure(0)
+          .expect("Failed to get first structure of caps.");
+        let new_pad_type = new_pad_struct.name();
+
+        if new_pad_type.starts_with("video/x-raw") {
+          let sink_pad = compositor
+            .request_pad_simple("sink_%u")
+            .expect("Failed to get static sink pad from compositor");
+          if sink_pad.is_linked() {
+            println!("Video pad is already linked. Ignoring.");
+            return;
+          }
+
+          let res = src_pad.link(&sink_pad);
+          if res.is_err() {
+            println!("Type is {new_pad_type} but link failed.");
+          } else {
+            println!("Link succeeded (type {new_pad_type}).");
+          }
+        } else if new_pad_type.starts_with("audio/x-raw") {
+          let sink_pad = audio_convert_rtmp
+            .static_pad("sink")
+            .expect("Failed to get static sink pad from audio_convert");
+          if sink_pad.is_linked() {
+            println!("Audio pad is already linked. Ignoring.");
+            return;
+          }
+
+          let res = src_pad.link(&sink_pad);
+          if res.is_err() {
+            println!("Type is {new_pad_type} but link failed.");
+          } else {
+            println!("Link succeeded (type {new_pad_type}).");
+          }
+        }
+      });
     }
-
-    rtmpsrc.connect_pad_added(move |src, src_pad| {
-      println!("Received new pad {} from {}", src_pad.name(), src.name());
-      let new_pad_caps = src_pad
-        .current_caps()
-        .expect("Failed to get caps of new pad.");
-      let new_pad_struct = new_pad_caps
-        .structure(0)
-        .expect("Failed to get first structure of caps.");
-      let new_pad_type = new_pad_struct.name();
-
-      if new_pad_type.starts_with("video/x-raw") {
-        let sink_pad = video_convert_rtmp
-          .static_pad("sink")
-          .expect("Failed to get static sink pad from video_convert1");
-        if sink_pad.is_linked() {
-          println!("Video pad is already linked. Ignoring.");
-          return;
-        }
-
-        let res = src_pad.link(&sink_pad);
-        if res.is_err() {
-          println!("Type is {new_pad_type} but link failed.");
-        } else {
-          println!("Link succeeded (type {new_pad_type}).");
-        }
-      } else if new_pad_type.starts_with("audio/x-raw") {
-        let sink_pad = audio_convert_rtmp
-                .static_pad("sink")
-                .expect("Failed to get static sink pad from audio_convert");
-            if sink_pad.is_linked() {
-                println!("Audio pad is already linked. Ignoring.");
-                return;
-            }
-
-            let res = src_pad.link(&sink_pad);
-            if res.is_err() {
-                println!("Type is {new_pad_type} but link failed.");
-            } else {
-                println!("Link succeeded (type {new_pad_type}).");
-            }
-      }
-    });
 
     //-----------------------------------------------------------------------------------------------//
     let nicesink = gstreamer::ElementFactory::make("nicesink")
