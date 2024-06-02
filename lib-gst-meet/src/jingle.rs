@@ -555,19 +555,57 @@ impl JingleSession {
     pipeline.add(&nicesrc)?;
 
     // Create the RTMP source element
-    let rtmpsrc = gstreamer::ElementFactory::make("rtmpsrc")
-        .property("location", "rtmp://streaming-edge-nlb-tcp-dev-760d448ad065fee5.elb.ap-south-1.amazonaws.com:1935/zofk1hv2qv8o5lmx/xffcser6zee1v6r2")
-        .build()?;
+    let rtmpuri = "https://gstreamer.freedesktop.org/data/media/sintel_trailer-480p.webm";
+    let rtmpsrc = gstreamer::ElementFactory::make("uridecodebin")
+      .name("source")
+      .property("uri", rtmpuri)
+      .build()
+      .expect("Could not create uridecodebin element.");
+
+    let video_convert_rtmp = gstreamer::ElementFactory::make("videoconvert")
+      .name("video_convert_rtmp")
+      .build()
+      .expect("Could not create videoconvert element.");
+
     pipeline.add(&rtmpsrc)?;
+    pipeline.add(&video_convert_rtmp)?;
 
-    // Create the decodebin element to decode the RTMP stream
-    let decodebin = gstreamer::ElementFactory::make("decodebin")
-        .build()?;
-    pipeline.add(&decodebin)?;
+    if let Some(compositor) = pipeline.by_name("video") {
+      gstreamer::Element::link_many(&[&video_convert_rtmp, &compositor])
+        .expect("Video elements could not be linked.");
+    }
+    
+    rtmpsrc.connect_pad_added(move |src, src_pad| {
+      println!("Received new pad {} from {}", src_pad.name(), src.name());
+      let new_pad_caps = src_pad
+        .current_caps()
+        .expect("Failed to get caps of new pad.");
+      let new_pad_struct = new_pad_caps
+        .structure(0)
+        .expect("Failed to get first structure of caps.");
+      let new_pad_type = new_pad_struct.name();
 
-    // Link the RTMP source to the decodebin
-    rtmpsrc.link(&decodebin)?;
+      if new_pad_type.starts_with("video/x-raw") {
+        let sink_pad = video_convert_rtmp
+          .static_pad("sink")
+          .expect("Failed to get static sink pad from video_convert1");
+        if sink_pad.is_linked() {
+          println!("Video pad is already linked. Ignoring.");
+          return;
+        }
 
+        let res = src_pad.link(&sink_pad);
+        if res.is_err() {
+          println!("Type is {new_pad_type} but link failed.");
+        } else {
+          println!("Link succeeded (type {new_pad_type}).");
+        }
+      } else if new_pad_type.starts_with("audio/x-raw") {
+        println!("Do nothing");
+      }
+    });
+
+    //-----------------------------------------------------------------------------------------------//
     let nicesink = gstreamer::ElementFactory::make("nicesink")
       .property("stream", ice_stream_id)
       .property("component", ice_component_id)
@@ -1027,14 +1065,13 @@ impl JingleSession {
                     let height = conference.config.recv_video_scale_height.clone() as i32;
 
                     for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
-                      let row = if width > height{
+                      let row = if width > height {
                         (index / HALF)
                       } else {
-                        (index % HALF) 
+                        (index % HALF)
                       };
-                      let col = if width > height
-                      {
-                        (index % HALF) 
+                      let col = if width > height {
+                        (index % HALF)
                       } else {
                         (index / HALF)
                       };
@@ -1043,8 +1080,14 @@ impl JingleSession {
                       let ypos = (row as i32 * height);
 
                       // If the number of sink elements are odd, use grid layout
-                      if sink_element_size % HALF == 0 || sink_element_size == 1{
-                        set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
+                      if sink_element_size % HALF == 0 || sink_element_size == 1 {
+                        set_properties_for_sink_pad_element(
+                          sink_element,
+                          width,
+                          height,
+                          xpos,
+                          ypos,
+                        );
                       }
 
                       // If the number of sink elemets 3, then the logic needs to be custom
@@ -1052,17 +1095,21 @@ impl JingleSession {
                         3 => {
                           let (x_offset, y_offset) = match index {
                             0 => (0, 0),
-                            1 => (width / HALF as i32 , 0),
+                            1 => (width / HALF as i32, 0),
                             2 => (width / QUARTER as i32, height / HALF as i32),
                             _ => unreachable!(),
                           };
-                          set_properties_for_sink_pad_element(sink_element, width / HALF as i32, 
-                            height / HALF as i32,  x_offset, y_offset);
-                        }
+                          set_properties_for_sink_pad_element(
+                            sink_element,
+                            width / HALF as i32,
+                            height / HALF as i32,
+                            x_offset,
+                            y_offset,
+                          );
+                        },
                         _ => info!("More than four participants, don't know what to do"),
                       }
                     }
-                  
                   },
                 }
 
