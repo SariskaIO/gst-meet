@@ -381,10 +381,11 @@ async fn main_inner() -> Result<()> {
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
       //let audio_sink = conference.audio_sink_element().await?;
-      let maybe_sink_element = handle.block_on(conference.remote_participant_audio_sink_element());
-      if let Some(audio_sink) = maybe_sink_element{
-        let _ = audio.link(&audio_sink);
-      };
+      let maybe_sink_element = (conference.remote_participant_audio_sink_element()).await;
+      if let Some(sink_element) = maybe_sink_element{
+        let _ = audio.link(&sink_element);
+      }
+      
     } else {
       conference.set_muted(MediaType::Audio, true).await?;
     }
@@ -394,7 +395,7 @@ async fn main_inner() -> Result<()> {
       info!("Found video element in pipeline, linking...");
       //let video_sink = conference.video_sink_element().await?;
       //let video_sink = conference.remote_participant_video_sink_element().await?;
-      let maybe_video_sink_element = handle.block_on(conference.remote_participant_video_sink_element());
+      let maybe_video_sink_element = conference.remote_participant_video_sink_element().await;
       if let Some(video_sink) = maybe_video_sink_element{
         let _ = video.link(&video_sink);
       }
