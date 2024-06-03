@@ -388,15 +388,21 @@ pub async fn start_recording(
     let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
     let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
-    let send_pipeline = if !ingest_url.is_empty() {
-        
-        format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video'", ingest_url)
+    // let send_pipeline = if !ingest_url.is_empty() {
+    //     format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video'", ingest_url)
+    // } else {
+    //     String::new()
+    // };
 
-    } else {
+    let ingest_source = if !ingest_url.is_empty(){
+        format!("uridecodebin uri={} name=dec \
+        dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
+        dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
+    }else{
         String::new()
     };
 
-    println!("Send pipeline is: {}", send_pipeline);
+    // println!("Send pipeline is: {}", send_pipeline);
 
     if resolution == "HD" { // high definition streaming
         set_var("PROFILE", "HD");
@@ -407,12 +413,13 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        {} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
+            compositor name=video background=black \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     } else if (is_low_latency && layout == "mobile")  {
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
@@ -427,8 +434,8 @@ pub async fn start_recording(
             --recv-video-scale-width=360 \
             --recv-video-scale-height=640 \
             --room-name={} \
-            {} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
             compositor name=video background=black \
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
             flvmux streamable=true name=mux ! rtmpsink location={}'",
@@ -436,7 +443,7 @@ pub async fn start_recording(
             XMPP_DOMAIN,
             XMPP_MUC_DOMAIN,
             params.room_name,
-            send_pipeline,
+            ingest_source,
             location
         );
     }else if layout == "mobile"{
@@ -447,13 +454,14 @@ pub async fn start_recording(
         --recv-video-scale-width=360 \
         --recv-video-scale-height=640 \
         --room-name={} \
-        {} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
+            compositor name=video background=black \
             ! videoscale 
             ! x264enc \
             ! video/x-h264,profile=main \
             ! flvmux streamable=true name=mux \
-            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     }else if is_low_latency {
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
@@ -468,8 +476,8 @@ pub async fn start_recording(
             --recv-video-scale-width=1280 \
             --recv-video-scale-height=720 \
             --room-name={} \
-            {} \
             --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
             compositor name=video background=black \
             ! videoscale
             ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
@@ -478,7 +486,7 @@ pub async fn start_recording(
             XMPP_DOMAIN,
             XMPP_MUC_DOMAIN,
             params.room_name,
-            send_pipeline,
+            ingest_source,
             location
         );        
     } else if is_low_latency && multi_bitrate {
@@ -492,12 +500,13 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        {} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black sink_1::xpos=1280 sink_2::xpos=0 sink_2::ypos=720 sink_3::xpos=1280 sink_3::ypos=720 \
+        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
+            compositor name=video background=black \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     } else if multi_bitrate {
         set_var("PROFILE", "HD");
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
@@ -507,8 +516,9 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        {} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. compositor name=video background=black \
+        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
+            {} \
+            compositor name=video background=black \
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
@@ -519,10 +529,9 @@ pub async fn start_recording(
         gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={}  --muc-domain={} \
         --room-name={} \
-        {} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
            ! flvmux streamable=true  name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
     } else if video_only { // video only streaming
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?param={}", location, encoded);
@@ -531,12 +540,13 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        {} \
-        --recv-pipeline='compositor name=video background=black \
+        --recv-pipeline='
+            {} \
+            compositor name=video background=black \
            ! x264enc \
            ! video/x-h264,profile=main \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     } else { // adaptive quality streaming
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?param={}", location, encoded);
@@ -546,15 +556,12 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-                 uridecodebin uri={} name=dec \
-                 dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
-                 dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 \
-                 compositor name=video background=black \
-                   sink_0::zorder=0 sink_1::zorder=1 \
+                 {} \
+                 compositor name=video background=black sink_0::zorder=0 sink_1::zorder=1 \
                  ! x264enc \
                  ! video/x-h264,profile=high \
                  ! flvmux streamable=true name=mux \
-                 ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_url, location);
+                 ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     }
 
     //
