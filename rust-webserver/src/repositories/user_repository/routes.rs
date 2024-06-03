@@ -546,16 +546,15 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-                uridecodebin uri={} name=dec \
-                dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
-                compositor name=video background=black \
-                sink_0::zorder=1 sink_1::zorder=0 \
+                 uridecodebin uri={} name=dec \
+                 dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
+                 dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 \
+                 compositor name=video background=black \
+                   sink_0::zorder=0 sink_1::zorder=1 \
                  ! x264enc \
                  ! video/x-h264,profile=high \
                  ! flvmux streamable=true name=mux \
-                 ! rtmpsink location={} \
-                 dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! x264enc ! video. \
-                 '", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_url, location);
+                 ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_url, location);
     }
 
     //
