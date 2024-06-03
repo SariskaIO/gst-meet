@@ -379,7 +379,8 @@ async fn main_inner() -> Result<()> {
     // Link audio compositor to audio sink element
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
-      let audio_sink = conference.audio_sink_element().await?;
+      //let audio_sink = conference.audio_sink_element().await?;
+      let audio_sink = conference.remote_participant_audio_sink_element().await?;
       audio.link(&audio_sink)?;
     } else {
       conference.set_muted(MediaType::Audio, true).await?;
@@ -388,7 +389,8 @@ async fn main_inner() -> Result<()> {
     // Link video compositor to video sink element
     if let Some(video) = bin.by_name("video") {
       info!("Found video element in pipeline, linking...");
-      let video_sink = conference.video_sink_element().await?;
+      //let video_sink = conference.video_sink_element().await?;
+      let video_sink = conference.remote_participant_video_sink_element().await?;
       video.link(&video_sink)?;
     } else {
       conference.set_muted(MediaType::Video, true).await?;
