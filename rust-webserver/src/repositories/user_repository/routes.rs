@@ -548,7 +548,7 @@ pub async fn start_recording(
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
                  uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! x264enc \
                  compositor name=video background=black \
-                   sink_0::zorder=0 sink_1::zorder=1 \
+                   sink_0::zorder=1 sink_1::zorder=0 \
                  ! x264enc \
                  ! video/x-h264,profile=high \
                  ! flvmux streamable=true name=mux \
