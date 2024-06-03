@@ -546,7 +546,7 @@ pub async fn start_recording(
         --recv-video-scale-height=720 \
         --room-name={} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-                 uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 ! mux. \
+                 uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 \
                  compositor name=video background=black \
                    sink_0::zorder=0 sink_1::zorder=1 \
                  ! x264enc \
