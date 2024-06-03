@@ -522,7 +522,7 @@ pub async fn start_recording(
            ! x264enc \
            ! video/x-h264,profile=high \
            ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
     } else if audio_only { // audio only streaming
         location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
         location = format!("{}?param={}", location, encoded);
