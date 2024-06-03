@@ -389,7 +389,9 @@ pub async fn start_recording(
     let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
     let send_pipeline = if !ingest_url.is_empty() {
+        
         format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video'", ingest_url)
+
     } else {
         String::new()
     };
@@ -543,12 +545,14 @@ pub async fn start_recording(
         --recv-video-scale-width=1280 \
         --recv-video-scale-height=720 \
         --room-name={} \
-        {} \
         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-        compositor name=video background=black \
-        ! videoscale \
-        ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
-        flvmux streamable=true name=mux ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, send_pipeline, location);
+                 uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 ! mux. \
+                 compositor name=video background=black \
+                   sink_0::zorder=0 sink_1::zorder=1 \
+                 ! x264enc \
+                 ! video/x-h264,profile=high \
+                 ! flvmux streamable=true name=mux \
+                 ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_url, location);
     }
 
     //
