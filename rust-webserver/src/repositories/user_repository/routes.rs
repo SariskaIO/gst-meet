@@ -603,7 +603,7 @@ pub async fn start_recording(
     }
 
     // Dynamically build the rest of the gstreamer pipeline
-    let gstreamer_pipeline = match (audio_only, video_only) {
+    gstreamer_pipeline = match (audio_only, video_only) {
         (true, false) => format!("{} audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
                                     ! flvmux streamable=true name=mux \
                                     ! rtmpsink location={}'", shared_pipeline, location),
