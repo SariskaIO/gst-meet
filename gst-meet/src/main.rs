@@ -7,7 +7,6 @@ use cocoa::appkit::NSApplication;
 use colibri::{ColibriMessage, Constraints, VideoType};
 use glib::ObjectExt;
 use gstreamer::prelude::GstBinExtManual;
-use tokio::{net::lookup_host, runtime::Handle, sync::oneshot, task::JoinHandle};
 use gstreamer::{
   prelude::{ElementExt, ElementExtManual, GstBinExt},
   GhostPad,
@@ -380,7 +379,7 @@ async fn main_inner() -> Result<()> {
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
       let audio_sink = conference.audio_sink_element().await?;
-      audio.link(&audio_sink);
+      audio.link(&audio_sink)?;
     } else {
       conference.set_muted(MediaType::Audio, true).await?;
     }
@@ -389,7 +388,7 @@ async fn main_inner() -> Result<()> {
     if let Some(video) = bin.by_name("video") {
       info!("Found video element in pipeline, linking...");
       let video_sink = conference.video_sink_element().await?;
-      video.link(&video_sink);
+      video.link(&video_sink)?;
     } else {
       conference.set_muted(MediaType::Video, true).await?;
     }
