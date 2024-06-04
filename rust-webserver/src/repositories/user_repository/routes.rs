@@ -598,7 +598,7 @@ pub async fn start_recording(
     );
 
     // Build location dynamically
-    let (video_width, video_height, profile, vhost) = match (resolution.as_str(), layout.as_str(), is_low_latency, multi_bitrate) {
+    let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
         ("HD", _, _, _) => (1280, 720, "HD", "transcode"),
         (_, "mobile", true, _) => (360, 640, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, "mobile", false, _) => (360, 640, "", ""),
