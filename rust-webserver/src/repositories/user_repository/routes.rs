@@ -594,7 +594,7 @@ pub async fn start_recording(
         _ => (1280, 720, "", ""),  // Default (adaptive quality)
     };
 
-    let location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
     location = format!("{}?vhost={}&param={}", location, vhost, encoded);
 
     // Set PROFILE if needed
