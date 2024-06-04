@@ -572,17 +572,6 @@ pub async fn start_recording(
         String::new()
     };
 
-    // Shared pipeline components
-    let shared_pipeline = format!(
-        "/usr/local/bin/gst-meet \
-        --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={} \
-        --muc-domain={} \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux.",
-        api_host, xmpp_domain, xmpp_muc_domain, params.room_name
-    );
-
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
         ("HD", _, _, _) => (1280, 720, "HD", "transcode"),
@@ -593,7 +582,21 @@ pub async fn start_recording(
         (_, _, _, true) => (1280, 720, "HD", "transcode"),
         _ => (1280, 720, "", ""),  // Default (adaptive quality)
     };
-
+    println!("Vhost is: {}", vhost)
+;    // Shared pipeline components
+    let shared_pipeline = format!(
+        "/usr/local/bin/gst-meet \
+        --web-socket-url=wss://{}/api/v1/media/websocket \
+        --xmpp-domain={} \
+        --muc-domain={} \
+        --recv-video-scale-width={} \
+        --recv-video-scale-height={} \
+        --room-name={} \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux.",
+        api_host, xmpp_domain, xmpp_muc_domain, video_width, video_height, params.room_name
+    );
+    
+    
     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
     location = format!("{}?vhost={}&param={}", location, vhost, encoded);
 
@@ -617,11 +620,11 @@ pub async fn start_recording(
         _ => format!("{} \
                     {} \
                     compositor name=video background=black \
-                    ! videoscale ! video/x-raw,width={},height={} \
+                    ! videoscale ! video/x-raw \
                     ! x264enc {} \
                     ! video/x-h264,profile={} \
                     ! flvmux streamable=true name=mux \
-                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_height, if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
+                    ! rtmpsink location={}'", shared_pipeline, ingest_source, if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
     };
 
     println!("gstreamer-pipeline: {}", gstreamer_pipeline);
