@@ -624,6 +624,8 @@ pub async fn start_recording(
                     ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_height, if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
     };
 
+    println!("gstreamer-pipeline: {}", gstreamer_pipeline);
+
     let child = Command::new("sh")
     .arg("-c")
     .arg(gstreamer_pipeline)
