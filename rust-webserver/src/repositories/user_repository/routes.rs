@@ -385,186 +385,259 @@ pub async fn start_recording(
 
     println!("Setting {} {} {}", layout, username, resolution);
 
-    let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
-    let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
-    let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
-    // let send_pipeline = if !ingest_url.is_empty() {
-    //     format!("--send-pipeline='uridecodebin uri={} ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! vp9enc buffer-size=1000 deadline=1 name=video'", ingest_url)
-    // } else {
+    fn get_env_var(var: &str) -> String {
+        env::var(var).unwrap_or_else(|_| DEFAULT_VAR.to_string())
+    }
+
+    fn get_location(base: &str, app: &str, stream: &str, encoded: &str, vhost: Option<&str>) -> String {
+        let mut location = format!("{}/{}/{}", base, app, stream);
+        if let Some(vhost) = vhost {
+            location = format!("{}?vhost={}&param={}", location, vhost, encoded);
+        } else {
+            location = format!("{}?param={}", location, encoded);
+        }
+        location
+    }
+
+
+    // let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
+    // let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
+    // let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
+
+    // let ingest_source = if !ingest_url.is_empty(){
+    //     format!("uridecodebin uri={} name=dec \
+    //     dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
+    //     dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
+    // }else{
     //     String::new()
     // };
 
-    let ingest_source = if !ingest_url.is_empty(){
+    // if resolution == "HD" { // high definition streaming
+    //     set_var("PROFILE", "HD");
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?param={}", location, encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=1280 \
+    //     --recv-video-scale-height=720 \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //        ! x264enc \
+    //        ! video/x-h264,profile=high \
+    //        ! flvmux streamable=true name=mux \
+    //        ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // } else if (is_low_latency && layout == "mobile")  {
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
+    //     if codec == "H265" {
+    //         location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
+    //     }
+    //     gstreamer_pipeline = format!(
+    //         "/usr/local/bin/gst-meet \
+    //         --web-socket-url=wss://{}/api/v1/media/websocket \
+    //         --xmpp-domain={} \
+    //         --muc-domain={} \
+    //         --recv-video-scale-width=360 \
+    //         --recv-video-scale-height=640 \
+    //         --room-name={} \
+    //         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
+    //         flvmux streamable=true name=mux ! rtmpsink location={}'",
+    //         API_HOST,
+    //         XMPP_DOMAIN,
+    //         XMPP_MUC_DOMAIN,
+    //         params.room_name,
+    //         ingest_source,
+    //         location
+    //     );
+    // }else if layout == "mobile"{
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?param={}", location, encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=360 \
+    //     --recv-video-scale-height=640 \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //         ! videoscale 
+    //         ! x264enc \
+    //         ! video/x-h264,profile=main \
+    //         ! flvmux streamable=true name=mux \
+    //         ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // }else if is_low_latency {
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
+    //     if codec == "H265" {
+    //         location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
+    //     }
+    //     gstreamer_pipeline = format!(
+    //         "/usr/local/bin/gst-meet \
+    //         --web-socket-url=wss://{}/api/v1/media/websocket \
+    //         --xmpp-domain={} \
+    //         --muc-domain={} \
+    //         --recv-video-scale-width=1280 \
+    //         --recv-video-scale-height=720 \
+    //         --room-name={} \
+    //         --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //         ! videoscale
+    //         ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
+    //         flvmux streamable=true name=mux ! rtmpsink location={}'",
+    //         API_HOST,
+    //         XMPP_DOMAIN,
+    //         XMPP_MUC_DOMAIN,
+    //         params.room_name,
+    //         ingest_source,
+    //         location
+    //     );        
+    // } else if is_low_latency && multi_bitrate {
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
+    //     if codec == "H265" {
+    //         location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
+    //     }        
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=1280 \
+    //     --recv-video-scale-height=720 \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //        ! x264enc \
+    //        ! video/x-h264,profile=high \
+    //        ! flvmux streamable=true name=mux \
+    //        ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // } else if multi_bitrate {
+    //     set_var("PROFILE", "HD");
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?vhost={}&param={}", location,"transcode".to_string(), encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=1280 \
+    //     --recv-video-scale-height=720 \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //         {} \
+    //         compositor name=video background=black \
+    //        ! x264enc \
+    //        ! video/x-h264,profile=high \
+    //        ! flvmux streamable=true name=mux \
+    //        ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // } else if audio_only { // audio only streaming
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?param={}", location, encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
+    //        ! flvmux streamable=true  name=mux \
+    //        ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
+    // } else if video_only { // video only streaming
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?param={}", location, encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=1280 \
+    //     --recv-video-scale-height=720 \
+    //     --room-name={} \
+    //     --recv-pipeline='
+    //         {} \
+    //         compositor name=video background=black \
+    //        ! x264enc \
+    //        ! video/x-h264,profile=main \
+    //        ! flvmux streamable=true name=mux \
+    //        ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // } else { // adaptive quality streaming
+    //     location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    //     location = format!("{}?param={}", location, encoded);
+    //     gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
+    //     --xmpp-domain={}  --muc-domain={} \
+    //     --recv-video-scale-width=1280 \
+    //     --recv-video-scale-height=720 \
+    //     --room-name={} \
+    //     --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+    //              {} \
+    //              compositor name=video background=black sink_0::zorder=0 sink_1::zorder=1 \
+    //              ! x264enc \
+    //              ! video/x-h264,profile=high \
+    //              ! flvmux streamable=true name=mux \
+    //              ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // }
+
+    //
+
+    let api_host = env::var("API_HOST").unwrap_or("none".to_string());
+    let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
+    let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
+
+    let ingest_source = if !ingest_url.is_empty() {
         format!("uridecodebin uri={} name=dec \
-        dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
-        dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
-    }else{
+             dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
+             dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
+    } else {
         String::new()
     };
 
-    // println!("Send pipeline is: {}", send_pipeline);
+    // Shared pipeline components
+    let shared_pipeline = format!(
+        "/usr/local/bin/gst-meet \
+        --web-socket-url=wss://{}/api/v1/media/websocket \
+        --xmpp-domain={} \
+        --muc-domain={} \
+        --room-name={} \
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux.",
+        api_host, xmpp_domain, xmpp_muc_domain, params.room_name
+    );
 
-    if resolution == "HD" { // high definition streaming
-        set_var("PROFILE", "HD");
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-           ! x264enc \
-           ! video/x-h264,profile=high \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
-    } else if (is_low_latency && layout == "mobile")  {
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
-        if codec == "H265" {
-            location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
-        }
-        gstreamer_pipeline = format!(
-            "/usr/local/bin/gst-meet \
-            --web-socket-url=wss://{}/api/v1/media/websocket \
-            --xmpp-domain={} \
-            --muc-domain={} \
-            --recv-video-scale-width=360 \
-            --recv-video-scale-height=640 \
-            --room-name={} \
-            --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-            ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
-            flvmux streamable=true name=mux ! rtmpsink location={}'",
-            API_HOST,
-            XMPP_DOMAIN,
-            XMPP_MUC_DOMAIN,
-            params.room_name,
-            ingest_source,
-            location
-        );
-    }else if layout == "mobile"{
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=360 \
-        --recv-video-scale-height=640 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-            ! videoscale 
-            ! x264enc \
-            ! video/x-h264,profile=main \
-            ! flvmux streamable=true name=mux \
-            ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
-    }else if is_low_latency {
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?vhost={}&param={}", location,"ll_latency_h264".to_string(), encoded);
-        if codec == "H265" {
-            location = format!("{}?vhost={}&param={}", location,"ll_latency_h265".to_string(), encoded);
-        }
-        gstreamer_pipeline = format!(
-            "/usr/local/bin/gst-meet \
-            --web-socket-url=wss://{}/api/v1/media/websocket \
-            --xmpp-domain={} \
-            --muc-domain={} \
-            --recv-video-scale-width=1280 \
-            --recv-video-scale-height=720 \
-            --room-name={} \
-            --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-            ! videoscale
-            ! x264enc speed-preset=ultrafast tune=zerolatency ! video/x-h264,profile=high ! \
-            flvmux streamable=true name=mux ! rtmpsink location={}'",
-            API_HOST,
-            XMPP_DOMAIN,
-            XMPP_MUC_DOMAIN,
-            params.room_name,
-            ingest_source,
-            location
-        );        
-    } else if is_low_latency && multi_bitrate {
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h264".to_string(), encoded);
-        if codec == "H265" {
-            location = format!("{}?vhost={}&param={}", location,"ll_latency_multi_bitrate_h265".to_string(), encoded);
-        }        
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-           ! x264enc \
-           ! video/x-h264,profile=high \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
-    } else if multi_bitrate {
-        set_var("PROFILE", "HD");
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?vhost={}&param={}", location,"transcode".to_string(), encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio  ! queue2 ! voaacenc bitrate=96000 ! mux. \
-            {} \
-            compositor name=video background=black \
-           ! x264enc \
-           ! video/x-h264,profile=high \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST,XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
-    } else if audio_only { // audio only streaming
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
-           ! flvmux streamable=true  name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, location);
-    } else if video_only { // video only streaming
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='
-            {} \
-            compositor name=video background=black \
-           ! x264enc \
-           ! video/x-h264,profile=main \
-           ! flvmux streamable=true name=mux \
-           ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
-    } else { // adaptive quality streaming
-        location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-        location = format!("{}?param={}", location, encoded);
-        gstreamer_pipeline = format!("/usr/local/bin/gst-meet --web-socket-url=wss://{}/api/v1/media/websocket \
-        --xmpp-domain={}  --muc-domain={} \
-        --recv-video-scale-width=1280 \
-        --recv-video-scale-height=720 \
-        --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-                 {} \
-                 compositor name=video background=black sink_0::zorder=0 sink_1::zorder=1 \
-                 ! x264enc \
-                 ! video/x-h264,profile=high \
-                 ! flvmux streamable=true name=mux \
-                 ! rtmpsink location={}'", API_HOST, XMPP_DOMAIN, XMPP_MUC_DOMAIN, params.room_name, ingest_source, location);
+    // Build location dynamically
+    let (video_width, video_height, profile, vhost) = match (resolution.as_str(), layout.as_str(), is_low_latency, multi_bitrate) {
+        ("HD", _, _, _) => (1280, 720, "HD", "transcode"),
+        (_, "mobile", true, _) => (360, 640, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
+        (_, "mobile", false, _) => (360, 640, "", ""),
+        (_, _, true, _) => (1280, 720, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
+        (_, _, true, true) => (1280, 720, "", if codec == "H265" { "ll_latency_multi_bitrate_h265" } else { "ll_latency_multi_bitrate_h264" }),
+        (_, _, _, true) => (1280, 720, "HD", "transcode"),
+        _ => (1280, 720, "", ""),  // Default (adaptive quality)
+    };
+
+    let location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
+    location = format!("{}?vhost={}&param={}", location, vhost, encoded);
+
+    // Set PROFILE if needed
+    if profile != "" {
+        set_var("PROFILE", profile);
     }
 
-    //
+    // Dynamically build the rest of the gstreamer pipeline
+    let gstreamer_pipeline = match (audio_only, video_only) {
+        (true, false) => format!("{} audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
+                                    ! flvmux streamable=true name=mux \
+                                    ! rtmpsink location={}'", shared_pipeline, location),
+        (false, true) => format!("{} \
+                                    {} \
+                                    compositor name=video background=black \
+                                    ! x264enc \
+                                    ! video/x-h264,profile=main \
+                                    ! flvmux streamable=true name=mux \
+                                    ! rtmpsink location={}'", shared_pipeline, ingest_source, location),
+        _ => format!("{} \
+                    {} \
+                    compositor name=video background=black \
+                    ! videoscale ! video/x-raw,width={},height={} \
+                    ! x264enc {} \
+                    ! video/x-h264,profile={} \
+                    ! flvmux streamable=true name=mux \
+                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_height, if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
+    };
+
     let child = Command::new("sh")
     .arg("-c")
     .arg(gstreamer_pipeline)
