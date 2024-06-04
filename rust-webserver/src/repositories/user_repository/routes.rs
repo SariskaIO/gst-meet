@@ -385,24 +385,10 @@ pub async fn start_recording(
 
     println!("Setting {} {} {}", layout, username, resolution);
 
-    fn get_env_var(var: &str) -> String {
-        env::var(var).unwrap_or_else(|_| DEFAULT_VAR.to_string())
-    }
 
-    fn get_location(base: &str, app: &str, stream: &str, encoded: &str, vhost: Option<&str>) -> String {
-        let mut location = format!("{}/{}/{}", base, app, stream);
-        if let Some(vhost) = vhost {
-            location = format!("{}?vhost={}&param={}", location, vhost, encoded);
-        } else {
-            location = format!("{}?param={}", location, encoded);
-        }
-        location
-    }
-
-
-    // let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
-    // let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
-    // let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
+    let API_HOST = env::var("API_HOST").unwrap_or("none".to_string());
+    let XMPP_MUC_DOMAIN = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
+    let XMPP_DOMAIN = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
     // let ingest_source = if !ingest_url.is_empty(){
     //     format!("uridecodebin uri={} name=dec \
