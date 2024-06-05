@@ -1013,14 +1013,13 @@ impl JingleSession {
                     let height = conference.config.recv_video_scale_height.clone() as i32;
 
                     for (index, sink_element) in sink_pads_vector.iter_mut().enumerate() {
-                      let row = if width > height{
+                      let row = if width > height {
                         (index / HALF)
                       } else {
-                        (index % HALF) 
+                        (index % HALF)
                       };
-                      let col = if width > height
-                      {
-                        (index % HALF) 
+                      let col = if width > height {
+                        (index % HALF)
                       } else {
                         (index / HALF)
                       };
@@ -1029,8 +1028,14 @@ impl JingleSession {
                       let ypos = (row as i32 * height);
 
                       // If the number of sink elements are odd, use grid layout
-                      if sink_element_size % HALF == 0 || sink_element_size == 1{
-                        set_properties_for_sink_pad_element(sink_element, width, height, xpos, ypos);
+                      if sink_element_size % HALF == 0 || sink_element_size == 1 {
+                        set_properties_for_sink_pad_element(
+                          sink_element,
+                          width,
+                          height,
+                          xpos,
+                          ypos,
+                        );
                       }
 
                       // If the number of sink elemets 3, then the logic needs to be custom
@@ -1038,22 +1043,25 @@ impl JingleSession {
                         3 => {
                           let (x_offset, y_offset) = match index {
                             0 => (0, 0),
-                            1 => (width / HALF as i32 , 0),
+                            1 => (width / HALF as i32, 0),
                             2 => (width / QUARTER as i32, height / HALF as i32),
                             _ => unreachable!(),
                           };
-                          set_properties_for_sink_pad_element(sink_element, width / HALF as i32, 
-                            height / HALF as i32,  x_offset, y_offset);
-                        }
+                          set_properties_for_sink_pad_element(
+                            sink_element,
+                            width / HALF as i32,
+                            height / HALF as i32,
+                            x_offset,
+                            y_offset,
+                          );
+                        },
                         _ => info!("More than four participants, don't know what to do"),
                       }
                     }
-                  
                   },
                 }
 
                 // Set the sink name on the source
-
                 let mut random_map = handle.block_on(async {
                   // Use handle.block_on to wait for the lock and access remote_ssrc_map
                   let mut jingle_session_guard = conference.jingle_session.lock().await;

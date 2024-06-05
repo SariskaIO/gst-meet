@@ -375,7 +375,6 @@ async fn main_inner() -> Result<()> {
 
   if let Some(bin) = send_pipeline {
     conference.add_bin(&bin).await?;
-
     // Link audio compositor to audio sink element
     if let Some(audio) = bin.by_name("audio") {
       info!("Found audio element in pipeline, linking...");
@@ -421,7 +420,7 @@ async fn main_inner() -> Result<()> {
     if let Some(video_element) = bin.by_name("video") {
       info!(
         "recv pipeline has a video element, a sink pad will be requested from it for each participant"
-      );
+      ); 
       conference
         .set_remote_participant_video_sink_element(Some(video_element))
         .await;
