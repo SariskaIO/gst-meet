@@ -446,7 +446,7 @@ pub async fn start_recording(
                     {} \
                     compositor name=video background=black \
                     ! videoscale \
-                    ! video/x-raw,width=\\(int\\)[320,640],height=\\(int\\)[240,480] \
+                    ! video/x-raw,width=[320,640],height=[240,480] \
                     ! x264enc {} \
                     ! video/x-h264,profile={} \
                     ! flvmux streamable=true name=mux \
