@@ -450,7 +450,7 @@ pub async fn start_recording(
                     ! x264enc {} \
                     ! video/x-h264,profile={} \
                     ! flvmux streamable=true name=mux \
-                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_height,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
+                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width*2, video_height*2,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
     };
 
     println!("gstreamer-pipeline: {}", gstreamer_pipeline);
