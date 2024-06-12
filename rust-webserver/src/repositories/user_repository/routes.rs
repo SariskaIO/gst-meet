@@ -230,8 +230,8 @@ pub async fn start_recording(
         }
     }
 
-    let mut app: String =  params.app;
-    let stream: String =  params.stream;
+    let mut app: String =  params.app.clone().to_string();
+    let stream: String =  params.stream.clone().to_string();
     let mut redis_actor = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
