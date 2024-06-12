@@ -286,11 +286,16 @@ pub async fn start_recording(
             }
     }
 
-    let RTMP_OUT_LOCATION;
-
+    let mut RTMP_OUT_LOCATION: String; // Declare RTMP_OUT_LOCATION
 
     if multi_bitrate {
-        RTMP_OUT_LOCATION = format!("rtmp://{}:{}", params.multiBitrateOriginPodIp, params.IngrestRtmpPort)
+        if let (Some(ip), Some(port)) = (&params.multiBitrateOriginPodIp, &params.IngrestRtmpPort) {
+            RTMP_OUT_LOCATION = format!("rtmp://{}:{}", ip, port);
+        } else {
+            // Handle the case where one or both of the fields are None
+            // You can choose to panic, return an error, or handle it differently based on your application's logic
+            panic!("Missing required fields for RTMP_OUT_LOCATION");
+        }
     } else {
         let response = minreq::get(env::var("ORIGIN_CLUSTER_SCHEDULER").unwrap_or("none".to_string())).send();
         match response {
