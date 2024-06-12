@@ -112,6 +112,10 @@ pub struct Params {
     profile: Option<String>,
     reconnect_window: Option<u64>,
     layout:  Option<String>,
+    app:  String,
+    stream:  String,
+    multiBitrateOriginPodIp: Option<String>,
+    IngrestRtmpPort: Option<String>,
     codec: Option<String>,
     multi_bitrate: Option<bool>,
     is_low_latency: Option<bool>,
@@ -226,8 +230,8 @@ pub async fn start_recording(
         }
     }
 
-    let mut app: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
-    let stream: String =  Alphanumeric.sample_string(&mut rand::thread_rng(), 16).to_lowercase();
+    let mut app: String =  params.app;
+    let stream: String =  params.stream;
     let mut redis_actor = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
@@ -282,20 +286,27 @@ pub async fn start_recording(
             }
     }
 
-    let response = minreq::get(env::var("ORIGIN_CLUSTER_SCHEDULER").unwrap_or("none".to_string())).send();
     let RTMP_OUT_LOCATION;
-    match response {
-        Ok(response)=>{
-            let response_as_str = response.as_str().unwrap_or("{}");
-            println!("{}", response_as_str);
-            let deserialized: SchedulerData = serde_json::from_str(&response_as_str).unwrap();
-            println!("{:?}", deserialized);
-            RTMP_OUT_LOCATION = format!("rtmp://{}:{}", deserialized.data.origin.ip, deserialized.data.origin.port.to_string()); 
-        },
-        _=>{
-            RTMP_OUT_LOCATION = "rtmp://srs-origin-0.socs:1935".to_owned() // fallback in case origin cluster scheduler is down
+
+
+    if multi_bitrate {
+        RTMP_OUT_LOCATION = format!("rtmp://{}:{}", params.multiBitrateOriginPodIp, params.IngrestRtmpPort)
+    } else {
+        let response = minreq::get(env::var("ORIGIN_CLUSTER_SCHEDULER").unwrap_or("none".to_string())).send();
+        match response {
+            Ok(response)=>{
+                let response_as_str = response.as_str().unwrap_or("{}");
+                println!("{}", response_as_str);
+                let deserialized: SchedulerData = serde_json::from_str(&response_as_str).unwrap();
+                println!("{:?}", deserialized);
+                RTMP_OUT_LOCATION = format!("rtmp://{}:{}", deserialized.data.origin.ip, deserialized.data.origin.port.to_string()); 
+            },
+            _=>{
+                RTMP_OUT_LOCATION = "rtmp://srs-origin-0.socs:1935".to_owned() // fallback in case origin cluster scheduler is down
+            }
         }
     }
+
 
     let url = Url::parse(&RTMP_OUT_LOCATION).unwrap();
     let hostname = url.host_str().unwrap();
