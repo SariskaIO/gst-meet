@@ -420,11 +420,11 @@ pub async fn start_recording(
 
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
-        ("HD", _, _, _) => (1280, 720, "HD", "transcode"),
+        ("HD", _, false, true) => (1280, 720, "HD", "transcode"),
         (_, "mobile", true, _) => (360, 640, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, "mobile", false, _) => (360, 640, "", ""),
-        (_, _, true, _) => (1280, 720, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, _, true, true) => (1280, 720, "", if codec == "H265" { "ll_latency_multi_bitrate_h265" } else { "ll_latency_multi_bitrate_h264" }),
+        (_, _, true, _) => (1280, 720, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, _, _, true) => (1280, 720, "HD", "transcode"),
         _ => (1280, 720, "", ""),  // Default (adaptive quality)
     };
