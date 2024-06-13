@@ -128,6 +128,11 @@ pub struct Params {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct StopParams {
+    room_name: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct RtmpParams {
     room_name: String,
     audio_only: Option<bool>,
@@ -593,7 +598,7 @@ if multi_bitrate && is_low_latency {
 
 pub async fn stop_recording( 
         _req: HttpRequest,
-        params: web::Json<Params>,
+        params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
 
