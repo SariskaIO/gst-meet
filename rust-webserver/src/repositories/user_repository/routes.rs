@@ -128,6 +128,11 @@ pub struct Params {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct StopParams {
+    room_name: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct RtmpParams {
     room_name: String,
     audio_only: Option<bool>,
@@ -230,8 +235,8 @@ pub async fn start_recording(
         }
     }
 
-    let mut app: String =  params.app;
-    let stream: String =  params.stream;
+    let mut app: String =  params.app.clone().to_string();
+    let stream: String =  params.stream.clone().to_string();
     let mut redis_actor = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
@@ -286,11 +291,16 @@ pub async fn start_recording(
             }
     }
 
-    let RTMP_OUT_LOCATION;
-
+    let mut RTMP_OUT_LOCATION: String; // Declare RTMP_OUT_LOCATION
 
     if multi_bitrate {
-        RTMP_OUT_LOCATION = format!("rtmp://{}:{}", params.multiBitrateOriginPodIp, params.IngrestRtmpPort)
+        if let (Some(ip), Some(port)) = (&params.multiBitrateOriginPodIp, &params.IngrestRtmpPort) {
+            RTMP_OUT_LOCATION = format!("rtmp://{}:{}", ip, port);
+        } else {
+            // Handle the case where one or both of the fields are None
+            // You can choose to panic, return an error, or handle it differently based on your application's logic
+            panic!("Missing required fields for RTMP_OUT_LOCATION");
+        }
     } else {
         let response = minreq::get(env::var("ORIGIN_CLUSTER_SCHEDULER").unwrap_or("none".to_string())).send();
         match response {
@@ -410,11 +420,11 @@ pub async fn start_recording(
 
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
-        ("HD", _, _, _) => (1280, 720, "HD", "transcode"),
+        ("HD", _, false, true) => (1280, 720, "HD", "transcode"),
         (_, "mobile", true, _) => (360, 640, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, "mobile", false, _) => (360, 640, "", ""),
-        (_, _, true, _) => (1280, 720, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, _, true, true) => (1280, 720, "", if codec == "H265" { "ll_latency_multi_bitrate_h265" } else { "ll_latency_multi_bitrate_h264" }),
+        (_, _, true, _) => (1280, 720, "", if codec == "H265" { "ll_latency_h265" } else { "ll_latency_h264" }),
         (_, _, _, true) => (1280, 720, "HD", "transcode"),
         _ => (1280, 720, "", ""),  // Default (adaptive quality)
     };
@@ -588,7 +598,7 @@ if multi_bitrate && is_low_latency {
 
 pub async fn stop_recording( 
         _req: HttpRequest,
-        params: web::Json<Params>,
+        params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
 
