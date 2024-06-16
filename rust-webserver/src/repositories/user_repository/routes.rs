@@ -27,52 +27,25 @@ use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandGet {
-    pub command: String,
-    pub arg: String,
-    pub arg2: Option<String>
-}
-
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandSet {
-    pub command: String,
-    pub arg: String,
-    pub arg2: String
-}
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandDel {
-    pub command: String,
-    pub arg: String
-}
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandPublish {
-    pub command: String,
-    pub channel: String,
-    pub message: String
-}
-
-#[derive(Clone)]
-pub struct RedisActor {
-    pub conn: MultiplexedConnection
-}
-
 use std::{collections::HashMap, sync::RwLock};
 use libc::{kill, SIGTERM};
+use redis::cluster::ClusterConnection;
+use redis::Commands;
+use redis::AsyncCommands;
+use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
+
+
+#[derive(Clone)]
+pub struct RedisDatabase {
+    pub cluster_client: Arc<Mutex<ClusterConnection>>
+}
+
 
 // This struct represents state
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Addr<RedisActor>,
+    pub conn: Arc<RedisDatabase>,
     pub is_recording: Arc<AtomicBool>,
 }
 
@@ -176,6 +149,14 @@ struct Origin {
     origin: InnerData
 }
 
+#[derive(Message, Debug)]
+#[rtype(result = "Result<Option<String>, redis::RedisError>")]
+pub struct PublishActiveRoomInfo {
+    pub command: String,
+    pub channel: String,
+    pub message: String
+}
+
 #[derive(Serialize)]
 struct ResponseVideoStart {
     started: bool,
@@ -199,20 +180,23 @@ struct ResponseStop {
     started: bool
 }
 
-
 #[derive(Serialize)]
 struct ResponseRecordingAlreadyStarted {
     started: bool,
     message: String,
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SetRoomInfo {
     pub hostname: String,
     pub process_id: String,
     pub room_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PublishRoomInfo {
+    pub channel: String,
+    pub message: String
 }
 
 pub async fn start_recording( 
@@ -237,7 +221,7 @@ pub async fn start_recording(
 
     let mut app: String =  params.app.clone().to_string();
     let stream: String =  params.stream.clone().to_string();
-    let mut redis_actor = &app_state.read().unwrap().conn;
+    let mut redis_connection = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
     let mut location;
@@ -503,12 +487,23 @@ pub async fn start_recording(
             }
         }
     });
-    let comm = InfoCommandSet {
-        command: "SET".to_string(),
-        arg2: serde_json::to_string(&room_info).unwrap(),
-        arg: format!("production::room_key::{}", params.room_name).to_string()
+    let cached_data_result = serde_json::to_vec(&room_info);
+    let cached_data = match cached_data_result {
+        Ok(data) => data,
+        Err(e) => {
+            println!("Error serializing to JSON: {:?}", e);
+            panic!("Missing required fields for RTMP_OUT_LOCATION");
+            // or handle the error in another appropriate way
+        }
     };
-    redis_actor.send(comm).await;
+    
+    redis_connection.set(
+        &format!("production::room_key::{}", params.room_name),
+        &cached_data,
+        1558400,
+    ).await.map_err(|e| {
+        println!("Error setting value in Redis: {:?}", e);
+    });
     let obj = create_response_start_video(app.clone(), stream.clone(), new_uuid.clone(), is_low_latency.clone(), codec.clone().to_string(), is_vod.clone(), multi_bitrate.clone());
     HttpResponse::Ok().json(obj)
 }
@@ -528,16 +523,15 @@ fn create_response_start_video(app: String, stream: String, uuid: String, is_low
     _ => LOW_LATENCY_HLS_HOST.as_str(),
     };
 
-if multi_bitrate && is_low_latency {
-    if codec == "H264" {
-        ll_latency_host = "ll_latency_multi_bitrate_h264";
-    } else if codec == "H265" {
-        ll_latency_host = "ll_latency_multi_bitrate_h265";
+    if multi_bitrate && is_low_latency {
+        if codec == "H264" {
+            ll_latency_host = "ll_latency_multi_bitrate_h264";
+        } else if codec == "H265" {
+            ll_latency_host = "ll_latency_multi_bitrate_h265";
+        }
     }
-}
    
-
-       let mut obj = json!({
+    let mut obj = json!({
         "started": true,
         "stream_name": app.clone(),
         "pod_name": env::var("MY_POD_NAME").unwrap_or("none".to_string()),
@@ -573,14 +567,14 @@ if multi_bitrate && is_low_latency {
     } 
     
     if is_low_latency && multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if is_low_latency {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else {
         obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
         obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
@@ -601,72 +595,64 @@ pub async fn stop_recording(
         params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
-
-    println!("{:?}", params);
     let _auth = _req.headers().get("Authorization");
     let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
     let token = _split[1].trim();
-    let mut redis_actor = &app_state.read().unwrap().conn;
+    let redis_connection = &app_state.read().unwrap().conn;
 
-    let comm = InfoCommandGet {
-        command: "GET".to_string(),
-        arg: format!("production::room_key::{}", params.room_name).to_string(),
-        arg2: None,
-    };
+    if let Ok(cached_data) = redis_connection.get(&format!("production::room_key::{}", params.room_name)).await {
+        if let Ok(cached_response_bytes) = serde_json::to_vec(&cached_data) {
+            let room_info: SetRoomInfo = serde_json::from_slice(&cached_response_bytes).unwrap();
+            let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
+            println!("{:?}", room_info);
     
-    let mut run_async = || async move {
-        redis_actor.send(comm).await
-    };
-
-    let result = async move {
-        // AssertUnwindSafe moved to the future
-        std::panic::AssertUnwindSafe(run_async()).catch_unwind().await
-    }.await;        
-
-    match result {
-        Ok(Ok(Ok(Some(value))))  => {
-           let room_info: SetRoomInfo = serde_json::from_str(&value).unwrap();
-           let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
-           println!("{:?}", room_info);
-           if room_info.hostname != "" {
-               if hostname == room_info.hostname {
+            if room_info.hostname != "" {
+                if hostname == room_info.hostname {
                     let my_int = room_info.process_id.parse::<i32>().unwrap();
                     unsafe {
                         signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
                     }
-               } else {
-                    let comm = InfoCommandPublish {
-                        command: "PUBLISH".to_string(),
-                        channel: "sariska_channel_gstreamer".to_string(),
-                        message: value
+                } else {
+                    let cached_data_result = serde_json::to_vec(&room_info);
+                    let cached_data = match cached_data_result {
+                        Ok(data) => data,
+                        Err(e) => {
+                            println!("Error serializing to JSON: {:?}", e);
+                            panic!("Missing required fields for RTMP_OUT_LOCATION");
+                            // or handle the error in another appropriate way
+                        }
                     };
-                    redis_actor.send(comm).await;
-               }
+
+                    match redis_connection.publish(&serde_json::to_string(&cached_data).unwrap()).await {
+                        Ok(_) => {
+                            // Publish successful
+                        },
+                        Err(e) => {
+                            println!("Error publishing message in Redis: {:?}", e);
+                            // Handle the error, e.g., return an error response
+                        }
+                    }                
+                }
             }
-        },
-        Ok(Ok(Ok(None))) => (),
-        Err(_)=> (),
-        Ok(Err(_))=>(),
-        Ok(Ok(Err(_)))=>()
-    };
-
-    let comm = InfoCommandDel {
-        command: "DEL".to_string(),
-        arg: format!("production::room_key::{}", params.room_name).to_string(),
+        } else {
+            // Handle serialization error
+        }
+    }
+    
+    let key = format!("production::room_key::{}", params.room_name);
+    let result = match redis_connection.del(&key).await {
+        Ok(_) => 1, // Assume deletion success means result is 1 (or any appropriate value)
+        Err(err) => {
+            panic!("Error deleting key: {:?}", err);
+        }
     };
     
-    let mut run_async = || async move {
-        redis_actor.send(comm).await
-    };
-
-    let result = async move {
-        // AssertUnwindSafe moved to the future
-        std::panic::AssertUnwindSafe(run_async()).catch_unwind().await
-    }.await;
-    
-    let obj = ResponseStop {
-        started: false
-    };
+    if result == 0 {
+        eprintln!("Key not found: {}", key);
+    } else {
+        println!("Key deleted successfully: {}", key);
+    }
+    let obj = ResponseStop { started: false };
     HttpResponse::Ok().json(obj)
 }
 

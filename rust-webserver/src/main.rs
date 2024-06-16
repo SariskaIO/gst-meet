@@ -4,16 +4,11 @@ use redis::AsyncCommands;
 use redis::ControlFlow;
 use redis::PubSubCommands;
 pub use repositories::AppState;
-pub use repositories::RedisActor;
-pub use repositories::InfoCommandGet;
-pub use repositories::InfoCommandSet;
-pub use repositories::InfoCommandDel;
-pub use repositories::InfoCommandPublish;
 pub use repositories::SetRoomInfo;
+pub use repositories::RedisDatabase;
 use std::env;
 use std::thread;
 use std::{collections::HashMap, pin::Pin, sync::RwLock};
-use redis::{Client, aio::MultiplexedConnection};
 use actix::prelude::*;
 use actix::Message;
 use libc::{kill, SIGTERM};
@@ -21,122 +16,125 @@ use serde_json::Error;
 use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
+use redis::cluster::ClusterClient;
+use redis::cluster::ClusterConnection;
+use redis::cluster::ClusterClientBuilder;
+use redis::{Client, RedisError};
+use redis::{aio::MultiplexedConnection};
+use redis::aio::PubSub;
+use redis::aio::PubSub as OtherPubSub;
+use actix_rt::signal::unix::signal;
+use tokio::sync::broadcast;
+use redis::aio::{Connection, ConnectionLike};
+use tokio::signal::unix::SignalKind;
+#[cfg(unix)]
+use tokio::signal::unix;
+use actix_rt::signal::unix::SignalKind as ActixSignalKind;
+use futures::StreamExt;
+use redis::Commands;
+use serde_json::de::Read;
+   
+use std::iter::Iterator;
+   
+impl RedisDatabase {
+    async fn new() -> Result<Self, RedisError> {
+        let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1/".to_string());
+        // Create a standalone Redis connection for Pub/Sub
+        let client = Client::open(redis_url.clone()).unwrap();
+        
+        // thread::spawn(move || {
+        //     let mut con = client.get_connection().unwrap();
+        //     let _ :() =  con.subscribe(&["sariska_channel_gstreamer"], |msg| {
+        //         let ch = msg.get_channel_name();
+        //         let payload: String = msg.get_payload().unwrap();
+        //         let decoded: SetRoomInfo  = serde_json::from_str(&payload).unwrap();
+        //         let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
 
-impl RedisActor {
-    pub async fn new(redis_url: String) -> Self {
-        let client = Client::open(redis_url).unwrap();
-        let (conn, call) = client.get_multiplexed_async_connection().await.unwrap();
+        //         println!("{} hostname", hostname);
+        //         if decoded.hostname != "" {
+        //             println!("{:?} subscribed", decoded);
+        //             if  hostname == decoded.hostname {
+        //                 let my_int = decoded.process_id.parse::<i32>().unwrap();
+        //                 unsafe {
+        //                     println!(" killed process id {} ", my_int);
+        //                     signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
+        //                 }
+        //             }
+        //         }
+        //         return ControlFlow::Continue;
+        //     }).unwrap();
+        // });
+
+        let client_clone = client.clone();
+
         thread::spawn(move || {
-            let mut con = client.get_connection().unwrap();
-            let _ :() =  con.subscribe(&["sariska_channel_gstreamer"], |msg| {
-                let ch = msg.get_channel_name();
-                let payload: String = msg.get_payload().unwrap();
-                let decoded: SetRoomInfo  = serde_json::from_str(&payload).unwrap();
-                let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
+            match client_clone.get_connection() {
+                Ok(mut con) => {
+                    let _ :() = con.subscribe(&["sariska_channel_gstreamer"], |msg| {
+                        let ch = msg.get_channel_name();
+                        let payload: String = msg.get_payload().unwrap();
+                        let decoded: SetRoomInfo = serde_json::from_str(&payload).unwrap();
+                        let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
 
-                println!("{} hostname", hostname);
-                if decoded.hostname != "" {
-                    println!("{:?} subscribed", decoded);
-                    if  hostname == decoded.hostname {
-                        let my_int = decoded.process_id.parse::<i32>().unwrap();
-                        unsafe {
-                            println!(" killed process id {} ", my_int);
-                            signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
+                        println!("{} hostname", hostname);
+                        if !decoded.hostname.is_empty() {
+                            println!("{:?} subscribed", decoded);
+                            if hostname == decoded.hostname {
+                                if let Ok(my_int) = decoded.process_id.parse::<i32>() {
+                                    unsafe {
+                                        println!("Killed process id {}", my_int);
+                                        signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
+                                    }
+                                }
+                            }
                         }
-                    }
+                        ControlFlow::Continue
+                    }).unwrap();
+                },
+                Err(e) => {
+                    eprintln!("Failed to establish Redis connection for Pub/Sub: {:?}", e);
                 }
-                return ControlFlow::Continue;
-            }).unwrap();
+            }
         });
-        actix_rt::spawn(call);
-        RedisActor { conn }
-    }
-}
 
-impl Handler<InfoCommandGet> for RedisActor {
-    type Result = ResponseFuture<Result<Option<String>, redis::RedisError>>;
-    fn handle(&mut self, _msg: InfoCommandGet, _: &mut Self::Context) -> Self::Result {
-        let mut con = self.conn.clone();
-        let mut cmd = redis::cmd(&_msg.command);
-
-        let fut = async move {
-            cmd
-                .arg(&_msg.arg)
-                .query_async(&mut con)
-                .await
-        };
-        Box::pin(fut)
-    }
-}
-
-impl Handler<InfoCommandSet> for RedisActor {
-
-    type Result = ResponseFuture<Result<Option<String>, redis::RedisError>>;
-
-    fn handle(&mut self, _msg: InfoCommandSet, _: &mut Self::Context) ->  Self::Result  {
-        let mut con = self.conn.clone();
-        let mut cmd = redis::cmd(&_msg.command);
-        let mut pipe = redis::pipe();
-        let fut = async move {
-            pipe.cmd("SET")
-            .arg(_msg.arg.clone())
-            .arg(_msg.arg2)
-            .ignore()
-            .cmd("EXPIRE")
-            .arg(_msg.arg.clone())
-            .arg(86400)
-            .ignore();
-
-            return pipe.query_async(&mut con).await; 
-        };
-        Box::pin(fut)
-    }
-}
-
-
-impl Handler<InfoCommandDel> for RedisActor {
+        let redis_password = env::var("REDIS_PASSWORD").ok();
     
-    type Result = ResponseFuture<Result<Option<String>, redis::RedisError>>;
-
-    fn handle(&mut self, _msg: InfoCommandDel, _: &mut Self::Context) ->Self::Result {
-        let mut con = self.conn.clone();
-        let mut cmd = redis::cmd(&_msg.command);
-        let mut pipe = redis::pipe();
-        let fut = async move {
-            pipe.cmd("DEL")
-            .arg(_msg.arg)
-            .ignore();
-
-            return pipe.query_async(&mut con).await; 
-        };
-        Box::pin(fut)
-    }
-}
-
-
-
-impl Handler<InfoCommandPublish> for RedisActor {
+        let mut builder = ClusterClientBuilder::new(vec![redis_url]);
+        if let Some(password) = redis_password {
+            builder = builder.password(password);
+        }
     
-    type Result = ResponseFuture<Result<Option<String>, redis::RedisError>>;
+        let client = builder.open()?;
+        let connection = client.get_connection()?;
+        let cluster_client = Arc::new(Mutex::new(connection));
 
-    fn handle(&mut self, _msg: InfoCommandPublish, _: &mut Self::Context) ->Self::Result {
-        println!("publish");
-        let mut con = self.conn.clone();
-        let mut cmd = redis::cmd(&_msg.command);
-        let mut pipe = redis::pipe();
-        let fut = async move {
-            pipe.cmd("publish")
-            .arg(_msg.channel)
-            .arg(_msg.message)
-            .ignore();
-            return pipe.query_async(&mut con).await; 
-        };
-        Box::pin(fut)
+
+        Ok(RedisDatabase { cluster_client })
     }
-}
 
-impl Actor for RedisActor {
-    type Context = Context<Self>;
+    async fn get(&self, key: &str) -> Result<Vec<u8>, RedisError> {
+        let mut con = self.cluster_client.lock().unwrap();
+        con.get(key)
+    }
+    
+    async fn del(&self, key: &str) -> Result<(), RedisError> {
+        let mut con = self.cluster_client.lock().unwrap();
+        con.del(key)?;
+        Ok(())
+    }
+
+    async fn set(&self, key: &str, value: &[u8], expiry: usize) -> Result<(), RedisError> {
+        let mut con = self.cluster_client.lock().unwrap();
+        con.set(key, value)?;
+        con.expire(key, expiry)?;
+        Ok(())
+    }
+
+    async fn publish(&self, message: &str) -> Result<(), RedisError> {
+        let mut con = self.cluster_client.lock().unwrap();
+        con.publish("sariska_channel_gstreamer", message)?;
+        Ok(())
+    }
 }
 
 pub async fn get_health_status() -> HttpResponse {
@@ -147,17 +145,21 @@ pub async fn get_health_status() -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let redis_url: String = env::var("REDIS_URL_GSTREAMER_PIPELINE").unwrap_or("none".to_string());
-    let actor = RedisActor::new(redis_url).await;
-    let addr = actor.start();
+    let database = match RedisDatabase::new().await {
+        Ok(db) => Arc::new(db),
+        Err(e) => {
+            eprintln!("Failed to initialize RedisDatabase: {:?}", e);
+            std::process::exit(1);
+        }
+    };
     let is_recording = Arc::new(AtomicBool::new(false));
-    println!("Random Random Random 1");
+    
     HttpServer::new(move || {
         App::new()
             .app_data( 
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
-                    conn: addr.clone(),
+                    conn: database.clone(),
                     is_recording: is_recording.clone()
             })).clone())
             .service(web::resource("/user/startRecording").route(web::post().to(repositories::user_repository::start_recording)))

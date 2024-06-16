@@ -27,10 +27,10 @@ async-std = { version = "1", features = ["attributes", "tokio1"] }
 libc = "0.2.132"
 rand = "0.8.5"
 humantime = "2.1.0"
-redis = "0.15"
+redis = { version = "0.21.5", features = ["aio", "connection-manager", "tokio-comp", "cluster"] }
 actix = "0.10.0-alpha.3"
 tokio-compat-02 = "0.2.0"
-tokio = "=1.21.2"
+tokio = { version = "1.21.2", features = ["full"] }
 minreq = "2.6.0"
 async-process = "1.5.0"
 nix = "0.26.1"
