@@ -602,41 +602,42 @@ pub async fn stop_recording(
 
     if let Ok(cached_data) = redis_connection.get(&format!("production::room_key::{}", params.room_name)).await {
         if let Ok(cached_response_bytes) = serde_json::to_vec(&cached_data) {
-            let room_info: SetRoomInfo = serde_json::from_slice(&cached_response_bytes).unwrap();
-            let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
-            println!("{:?}", room_info);
-    
-            if room_info.hostname != "" {
-                if hostname == room_info.hostname {
-                    let my_int = room_info.process_id.parse::<i32>().unwrap();
-                    unsafe {
-                        signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
-                    }
-                } else {
-                    let cached_data_result = serde_json::to_vec(&room_info);
-                    let cached_data = match cached_data_result {
-                        Ok(data) => data,
-                        Err(e) => {
-                            println!("Error serializing to JSON: {:?}", e);
-                            panic!("Missing required fields for RTMP_OUT_LOCATION");
-                            // or handle the error in another appropriate way
-                        }
-                    };
+            println!("Cached response bytes: {:?}", cached_response_bytes);
 
-                    match redis_connection.publish(&serde_json::to_string(&cached_data).unwrap()).await {
-                        Ok(_) => {
-                            // Publish successful
-                        },
-                        Err(e) => {
-                            println!("Error publishing message in Redis: {:?}", e);
-                            // Handle the error, e.g., return an error response
+            match serde_json::from_slice::<SetRoomInfo>(&cached_response_bytes) {
+                Ok(room_info) => {
+                    println!("Room info: {:?}", room_info);
+                    let hostname = env::var("MY_POD_NAME").unwrap_or_else(|_| "none".to_string());
+                    if !room_info.hostname.is_empty() {
+                        if hostname == room_info.hostname {
+                            if let Ok(my_int) = room_info.process_id.parse::<i32>() {
+                                unsafe {
+                                    signal::kill(Pid::from_raw(my_int), signal::Signal::SIGTERM).unwrap();
+                                }
+                            } else {
+                                println!("Failed to parse process_id: {}", room_info.process_id);
+                            }
+                        } else {
+                            if let Ok(cached_data) = serde_json::to_vec(&room_info) {
+                                if let Err(e) = redis_connection.publish(&serde_json::to_string(&cached_data).unwrap()).await {
+                                    println!("Error publishing message in Redis: {:?}", e);
+                                }
+                            } else {
+                                println!("Error serializing room info to JSON");
+                            }
                         }
-                    }                
+                    }
+                }
+                Err(e) => {
+                    println!("Failed to deserialize JSON to SetRoomInfo: {:?}", e);
+                    println!("Raw JSON bytes: {:?}", cached_response_bytes);
                 }
             }
         } else {
-            // Handle serialization error
+            println!("Failed to serialize cached data to JSON");
         }
+    } else {
+        println!("Failed to get cached data from Redis");
     }
     
     let key = format!("production::room_key::{}", params.room_name);
