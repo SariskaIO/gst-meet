@@ -40,8 +40,10 @@ impl RedisDatabase {
     async fn new() -> Result<Self, RedisError> {
         let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1/".to_string());
         // Create a standalone Redis connection for Pub/Sub
+        println!("redis_url.......{}", redis_url);
+        // let client = Client::open("redis://127.0.0.1/")?;
         let client = Client::open(redis_url.clone()).unwrap();
-        
+        println!("client..{?}",client); 
         // thread::spawn(move || {
         //     let mut con = client.get_connection().unwrap();
         //     let _ :() =  con.subscribe(&["sariska_channel_gstreamer"], |msg| {
