@@ -602,7 +602,7 @@ pub async fn stop_recording(
 
     if let Ok(cached_data) = redis_connection.get(&format!("production::room_key::{}", params.room_name)).await {
         if let Ok(cached_response_bytes) = serde_json::to_vec(&cached_data) {
-            println!("Cached response bytes: {:?}", cached_response_bytes);
+            println!("Cached response: {:?}", cached_data);
 
             match serde_json::from_slice::<SetRoomInfo>(&cached_response_bytes) {
                 Ok(room_info) => {
