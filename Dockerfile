@@ -4,12 +4,13 @@ RUN apk --no-cache --update upgrade --ignore alpine-baselayout \
 COPY . .
 RUN cargo build --release -p gst-meet
 
-# Update `actix-http` to a version compatible with Rust 1.71.1
-RUN cargo add --package rust-webserver actix-http@=3.4.0
-
 # Continue with the build in the same stage
 COPY ./rust-webserver .
 WORKDIR ./rust-webserver
+
+# Update `actix-http` to a version compatible with Rust 1.71.1
+RUN cargo add --package rust-webserver actix-http@=3.4.0
+
 RUN cargo build --release -p rust-webserver
 
 # Create the final image
