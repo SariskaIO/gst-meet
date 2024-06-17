@@ -10,11 +10,10 @@ use std::f32::consts::E;
 use actix_web::{get, web, post, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{decode ,decode_header,  Algorithm, DecodingKey, Validation};
-use std::process::{Command, Stdio};
+use std::process::{Stdio};
 use std::time::{SystemTime};
 use rand::distributions::{Alphanumeric, DistString};
 use reqwest::header::{HeaderMap};
-use redis::{Client, aio::MultiplexedConnection};
 use actix::Message;
 use std::panic;
 use minreq;
@@ -27,52 +26,17 @@ use nix::sys::signal::{self, Signal};
 use url::Url;
 use serde_json::{json, Value};
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandGet {
-    pub command: String,
-    pub arg: String,
-    pub arg2: Option<String>
-}
-
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandSet {
-    pub command: String,
-    pub arg: String,
-    pub arg2: String
-}
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandDel {
-    pub command: String,
-    pub arg: String
-}
-
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct InfoCommandPublish {
-    pub command: String,
-    pub channel: String,
-    pub message: String
-}
-
-#[derive(Clone)]
-pub struct RedisActor {
-    pub conn: MultiplexedConnection
-}
-
 use std::{collections::HashMap, sync::RwLock};
 use libc::{kill, SIGTERM};
+use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
+use std::process::{Command, Child};
+use lazy_static::lazy_static;
+
 
 // This struct represents state
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Addr<RedisActor>,
     pub is_recording: Arc<AtomicBool>,
 }
 
@@ -199,20 +163,27 @@ struct ResponseStop {
     started: bool
 }
 
-
 #[derive(Serialize)]
 struct ResponseRecordingAlreadyStarted {
     started: bool,
     message: String,
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SetRoomInfo {
     pub hostname: String,
     pub process_id: String,
     pub room_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PublishRoomInfo {
+    pub channel: String,
+    pub message: String
+}
+
+lazy_static! {
+    static ref CHILD_PID: Arc<Mutex<Option<Pid>>> = Arc::new(Mutex::new(None));
 }
 
 pub async fn start_recording( 
@@ -237,7 +208,6 @@ pub async fn start_recording(
 
     let mut app: String =  params.app.clone().to_string();
     let stream: String =  params.stream.clone().to_string();
-    let mut redis_actor = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
     let mut location;
@@ -484,31 +454,19 @@ pub async fn start_recording(
     println!("Started process: {}", child.id());
     println!("{} print child process id", child.id().to_string());
 
-    let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
-    let room_info = SetRoomInfo {
-        room_name: params.room_name.to_string(),
-        process_id: child.id().to_string().clone(),
-        hostname: hostname
-    };
+    *CHILD_PID.lock().unwrap() = Some(Pid::from_raw(child.id() as i32));
 
     thread::spawn(move || {
         let mut f = BufReader::new(child.stdout.unwrap());
         loop {
             let mut buf = String::new();
-            match f.read_line(&mut buf) {
-                Ok(_) => {
-                    buf.as_str();
-                }
-                Err(e) => println!("an error!: {:?}", e),
+            if let Ok(_) = f.read_line(&mut buf) {
+                // Process stdout line
+            } else {
+                break;
             }
         }
     });
-    let comm = InfoCommandSet {
-        command: "SET".to_string(),
-        arg2: serde_json::to_string(&room_info).unwrap(),
-        arg: format!("production::room_key::{}", params.room_name).to_string()
-    };
-    redis_actor.send(comm).await;
     let obj = create_response_start_video(app.clone(), stream.clone(), new_uuid.clone(), is_low_latency.clone(), codec.clone().to_string(), is_vod.clone(), multi_bitrate.clone());
     HttpResponse::Ok().json(obj)
 }
@@ -528,16 +486,15 @@ fn create_response_start_video(app: String, stream: String, uuid: String, is_low
     _ => LOW_LATENCY_HLS_HOST.as_str(),
     };
 
-if multi_bitrate && is_low_latency {
-    if codec == "H264" {
-        ll_latency_host = "ll_latency_multi_bitrate_h264";
-    } else if codec == "H265" {
-        ll_latency_host = "ll_latency_multi_bitrate_h265";
+    if multi_bitrate && is_low_latency {
+        if codec == "H264" {
+            ll_latency_host = "ll_latency_multi_bitrate_h264";
+        } else if codec == "H265" {
+            ll_latency_host = "ll_latency_multi_bitrate_h265";
+        }
     }
-}
    
-
-       let mut obj = json!({
+    let mut obj = json!({
         "started": true,
         "stream_name": app.clone(),
         "pod_name": env::var("MY_POD_NAME").unwrap_or("none".to_string()),
@@ -573,14 +530,14 @@ if multi_bitrate && is_low_latency {
     } 
     
     if is_low_latency && multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if is_low_latency {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, ll_latency_host));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv?vhost={}", EDGE_TCP_PLAY, app, stream, "transcode",));
+        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else {
         obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
         obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
@@ -601,72 +558,26 @@ pub async fn stop_recording(
         params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
+    {
+        let mut state = app_state.write().unwrap();
+        state.is_recording.store(false, Ordering::SeqCst);
+    }
 
-    println!("{:?}", params);
-    let _auth = _req.headers().get("Authorization");
-    let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
-    let token = _split[1].trim();
-    let mut redis_actor = &app_state.read().unwrap().conn;
-
-    let comm = InfoCommandGet {
-        command: "GET".to_string(),
-        arg: format!("production::room_key::{}", params.room_name).to_string(),
-        arg2: None,
-    };
-    
-    let mut run_async = || async move {
-        redis_actor.send(comm).await
+    let child_pid = {
+        let guard = CHILD_PID.lock().unwrap();
+        guard.clone()
     };
 
-    let result = async move {
-        // AssertUnwindSafe moved to the future
-        std::panic::AssertUnwindSafe(run_async()).catch_unwind().await
-    }.await;        
+    if let Some(pid) = child_pid {
+        if let Err(err) = signal::kill(pid, Signal::SIGTERM) {
+            eprintln!("Failed to kill process with PID {}: {:?}", pid, err);
+        } else {
+            println!("Successfully sent SIGTERM to process with PID {}", pid);
+        }
+    } else {
+        println!("No child process to kill");
+    }
 
-    match result {
-        Ok(Ok(Ok(Some(value))))  => {
-           let room_info: SetRoomInfo = serde_json::from_str(&value).unwrap();
-           let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
-           println!("{:?}", room_info);
-           if room_info.hostname != "" {
-               if hostname == room_info.hostname {
-                    let my_int = room_info.process_id.parse::<i32>().unwrap();
-                    unsafe {
-                        signal::kill(Pid::from_raw(my_int), Signal::SIGTERM).unwrap();
-                    }
-               } else {
-                    let comm = InfoCommandPublish {
-                        command: "PUBLISH".to_string(),
-                        channel: "sariska_channel_gstreamer".to_string(),
-                        message: value
-                    };
-                    redis_actor.send(comm).await;
-               }
-            }
-        },
-        Ok(Ok(Ok(None))) => (),
-        Err(_)=> (),
-        Ok(Err(_))=>(),
-        Ok(Ok(Err(_)))=>()
-    };
-
-    let comm = InfoCommandDel {
-        command: "DEL".to_string(),
-        arg: format!("production::room_key::{}", params.room_name).to_string(),
-    };
-    
-    let mut run_async = || async move {
-        redis_actor.send(comm).await
-    };
-
-    let result = async move {
-        // AssertUnwindSafe moved to the future
-        std::panic::AssertUnwindSafe(run_async()).catch_unwind().await
-    }.await;
-    
-    let obj = ResponseStop {
-        started: false
-    };
-    HttpResponse::Ok().json(obj)
+    HttpResponse::Ok().json(ResponseStop { started: false })
 }
 
