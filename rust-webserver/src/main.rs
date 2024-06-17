@@ -21,6 +21,9 @@ use futures::StreamExt;
 use serde_json::de::Read;
 use std::iter::Iterator;
 use actix_web_prometheus::{PrometheusMetrics, PrometheusMetricsBuilder};
+use actix_web::http::header::{HeaderMap};
+use actix_web::http::{StatusCode};
+use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
    
 pub async fn get_health_status() -> HttpResponse {
     HttpResponse::Ok()
