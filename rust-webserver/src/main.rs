@@ -20,6 +20,7 @@ use actix_rt::signal::unix::SignalKind as ActixSignalKind;
 use futures::StreamExt;
 use serde_json::de::Read;
 use std::iter::Iterator;
+use actix_web_prometheus::{PrometheusMetrics, PrometheusMetricsBuilder};
    
 pub async fn get_health_status() -> HttpResponse {
     HttpResponse::Ok()
@@ -30,9 +31,15 @@ pub async fn get_health_status() -> HttpResponse {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let is_recording = Arc::new(AtomicBool::new(false));
+
+    let prometheus = PrometheusMetricsBuilder::new("api")
+        .endpoint("/metrics")
+        .build()
+        .unwrap();
     
     HttpServer::new(move || {
         App::new()
+            .wrap(prometheus.clone())
             .app_data( 
                 web::Data::new(RwLock::new(AppState {
                     map: HashMap::new(),
