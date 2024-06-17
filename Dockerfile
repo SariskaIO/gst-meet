@@ -5,7 +5,7 @@ COPY . .
 RUN cargo build --release -p gst-meet
 
 # Update `actix-http` to a version compatible with Rust 1.71.1
-RUN cargo update -p actix-http --precise 3.6.0
+RUN cargo update -p actix-http --precise 3.4.0
 
 # Continue with the build in the same stage
 COPY ./rust-webserver .
