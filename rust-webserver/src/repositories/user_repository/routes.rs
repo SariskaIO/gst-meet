@@ -30,6 +30,7 @@ use std::{collections::HashMap, sync::RwLock};
 use libc::{kill, SIGTERM};
 use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
 use std::process::{Command, Child};
+use lazy_static::lazy_static;
 
 
 // This struct represents state
@@ -181,7 +182,9 @@ pub struct PublishRoomInfo {
     pub message: String
 }
 
-static mut CHILD_PROCESS: Option<Arc<Mutex<Option<Child>>>> = None;
+lazy_static! {
+    static ref CHILD_PID: Arc<Mutex<Option<Pid>>> = Arc::new(Mutex::new(None));
+}
 
 pub async fn start_recording( 
         _req: HttpRequest,
@@ -451,28 +454,16 @@ pub async fn start_recording(
     println!("Started process: {}", child.id());
     println!("{} print child process id", child.id().to_string());
 
-    let child_arc = Arc::new(Mutex::new(Some(child)));
-
-    unsafe {
-        CHILD_PROCESS = Some(child_arc.clone());
-    }
+    *CHILD_PID.lock().unwrap() = Some(Pid::from_raw(child.id() as i32));
 
     thread::spawn(move || {
-        let child_handle = unsafe {
-            CHILD_PROCESS.as_ref().unwrap().clone()
-        };
-
-        let mut guard = child_handle.lock().unwrap();
-        let mut child = guard.take().unwrap();
-
-        let mut f = BufReader::new(child.stdout.take().unwrap());
+        let mut f = BufReader::new(child.stdout.unwrap());
         loop {
             let mut buf = String::new();
-            match f.read_line(&mut buf) {
-                Ok(_) => {
-                    // Process stdout line
-                }
-                Err(e) => println!("an error!: {:?}", e),
+            if let Ok(_) = f.read_line(&mut buf) {
+                // Process stdout line
+            } else {
+                break;
             }
         }
     });
@@ -567,18 +558,26 @@ pub async fn stop_recording(
         params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
-    unsafe {
-        if let Some(child_handle) = &CHILD_PROCESS {
-            if let Ok(mut guard) = child_handle.lock() {
-                if let Some(mut child) = guard.take() {
-                    child.kill().expect("Failed to kill child process");
-                    // Handle any cleanup or logging here
-                }
-            }
-        }
+    {
+        let mut state = app_state.write().unwrap();
+        state.is_recording.store(false, Ordering::SeqCst);
     }
 
-    let obj = ResponseStop { started: false };
-    HttpResponse::Ok().json(obj)
+    let child_pid = {
+        let guard = CHILD_PID.lock().unwrap();
+        guard.clone()
+    };
+
+    if let Some(pid) = child_pid {
+        if let Err(err) = signal::kill(pid, Signal::SIGTERM) {
+            eprintln!("Failed to kill process with PID {}: {:?}", pid, err);
+        } else {
+            println!("Successfully sent SIGTERM to process with PID {}", pid);
+        }
+    } else {
+        println!("No child process to kill");
+    }
+
+    HttpResponse::Ok().json(ResponseStop { started: false })
 }
 
