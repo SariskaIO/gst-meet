@@ -530,17 +530,17 @@ fn create_response_start_video(app: String, stream: String, uuid: String, is_low
     } 
     
     if is_low_latency && multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
+        obj["rtmp_play_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_play_url"] = json!(format!("http://{}:8080/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if is_low_latency {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
+        obj["rtmp_play_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_play_url"] = json!(format!("http://{}:8080/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else if multi_bitrate {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
+        obj["rtmp_play_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_play_url"] = json!(format!("http://{}:8080/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     } else {
-        obj["rtmp_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
-        obj["flv_url"] = json!(format!("http://{}:8936/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
+        obj["rtmp_play_url"] = json!(format!("rtmp://{}:1935/{}/{}", EDGE_TCP_PLAY, app, stream));
+        obj["flv_play_url"] = json!(format!("http://{}:8080/{}/{}.flv", EDGE_TCP_PLAY, app, stream));
     }
 
     obj.as_object().map(|map| {
