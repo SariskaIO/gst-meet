@@ -10,11 +10,10 @@ use std::f32::consts::E;
 use actix_web::{get, web, post, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{decode ,decode_header,  Algorithm, DecodingKey, Validation};
-use std::process::{Command, Stdio};
+use std::process::{Stdio};
 use std::time::{SystemTime};
 use rand::distributions::{Alphanumeric, DistString};
 use reqwest::header::{HeaderMap};
-use redis::{Client, aio::MultiplexedConnection};
 use actix::Message;
 use std::panic;
 use minreq;
@@ -29,23 +28,14 @@ use serde_json::{json, Value};
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 use std::{collections::HashMap, sync::RwLock};
 use libc::{kill, SIGTERM};
-use redis::cluster::ClusterConnection;
-use redis::Commands;
-use redis::AsyncCommands;
 use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
-
-
-#[derive(Clone)]
-pub struct RedisDatabase {
-    pub cluster_client: Arc<Mutex<ClusterConnection>>
-}
+use std::process::{Command, Child};
 
 
 // This struct represents state
 #[derive(Clone)]
 pub struct AppState {
     pub map: HashMap<String,  String>,
-    pub conn: Arc<RedisDatabase>,
     pub is_recording: Arc<AtomicBool>,
 }
 
@@ -149,14 +139,6 @@ struct Origin {
     origin: InnerData
 }
 
-#[derive(Message, Debug)]
-#[rtype(result = "Result<Option<String>, redis::RedisError>")]
-pub struct PublishActiveRoomInfo {
-    pub command: String,
-    pub channel: String,
-    pub message: String
-}
-
 #[derive(Serialize)]
 struct ResponseVideoStart {
     started: bool,
@@ -199,6 +181,8 @@ pub struct PublishRoomInfo {
     pub message: String
 }
 
+static mut CHILD_PROCESS: Option<Arc<Mutex<Option<Child>>>> = None;
+
 pub async fn start_recording( 
         _req: HttpRequest,
         params: web::Json<Params>,
@@ -221,7 +205,6 @@ pub async fn start_recording(
 
     let mut app: String =  params.app.clone().to_string();
     let stream: String =  params.stream.clone().to_string();
-    let mut redis_connection = &app_state.read().unwrap().conn;
     let _auth = _req.headers().get("Authorization");
 
     let mut location;
@@ -468,41 +451,30 @@ pub async fn start_recording(
     println!("Started process: {}", child.id());
     println!("{} print child process id", child.id().to_string());
 
-    let hostname = env::var("MY_POD_NAME").unwrap_or("none".to_string());
-    let room_info = SetRoomInfo {
-        room_name: params.room_name.to_string(),
-        process_id: child.id().to_string().clone(),
-        hostname: hostname
-    };
+    let child_arc = Arc::new(Mutex::new(Some(child)));
+
+    unsafe {
+        CHILD_PROCESS = Some(child_arc.clone());
+    }
 
     thread::spawn(move || {
-        let mut f = BufReader::new(child.stdout.unwrap());
+        let child_handle = unsafe {
+            CHILD_PROCESS.as_ref().unwrap().clone()
+        };
+
+        let mut guard = child_handle.lock().unwrap();
+        let mut child = guard.take().unwrap();
+
+        let mut f = BufReader::new(child.stdout.take().unwrap());
         loop {
             let mut buf = String::new();
             match f.read_line(&mut buf) {
                 Ok(_) => {
-                    buf.as_str();
+                    // Process stdout line
                 }
                 Err(e) => println!("an error!: {:?}", e),
             }
         }
-    });
-    let cached_data_result = serde_json::to_vec(&room_info);
-    let cached_data = match cached_data_result {
-        Ok(data) => data,
-        Err(e) => {
-            println!("Error serializing to JSON: {:?}", e);
-            panic!("Missing required fields for RTMP_OUT_LOCATION");
-            // or handle the error in another appropriate way
-        }
-    };
-    
-    redis_connection.set(
-        &format!("production::room_key::{}", params.room_name),
-        &cached_data,
-        1558400,
-    ).await.map_err(|e| {
-        println!("Error setting value in Redis: {:?}", e);
     });
     let obj = create_response_start_video(app.clone(), stream.clone(), new_uuid.clone(), is_low_latency.clone(), codec.clone().to_string(), is_vod.clone(), multi_bitrate.clone());
     HttpResponse::Ok().json(obj)
@@ -595,64 +567,17 @@ pub async fn stop_recording(
         params: web::Json<StopParams>,
         app_state: web::Data<RwLock<AppState>>
     ) -> HttpResponse {
-    let _auth = _req.headers().get("Authorization");
-    let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
-    let token = _split[1].trim();
-    let redis_connection = &app_state.read().unwrap().conn;
-
-    if let Ok(cached_data) = redis_connection.get(&format!("production::room_key::{}", params.room_name)).await {
-        if let Ok(cached_response_bytes) = serde_json::to_vec(&cached_data) {
-            println!("Cached response: {:?}", cached_data);
-
-            match serde_json::from_slice::<SetRoomInfo>(&cached_response_bytes) {
-                Ok(room_info) => {
-                    println!("Room info: {:?}", room_info);
-                    let hostname = env::var("MY_POD_NAME").unwrap_or_else(|_| "none".to_string());
-                    if !room_info.hostname.is_empty() {
-                        if hostname == room_info.hostname {
-                            if let Ok(my_int) = room_info.process_id.parse::<i32>() {
-                                unsafe {
-                                    signal::kill(Pid::from_raw(my_int), signal::Signal::SIGTERM).unwrap();
-                                }
-                            } else {
-                                println!("Failed to parse process_id: {}", room_info.process_id);
-                            }
-                        } else {
-                            if let Ok(cached_data) = serde_json::to_vec(&room_info) {
-                                if let Err(e) = redis_connection.publish(&serde_json::to_string(&cached_data).unwrap()).await {
-                                    println!("Error publishing message in Redis: {:?}", e);
-                                }
-                            } else {
-                                println!("Error serializing room info to JSON");
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("Failed to deserialize JSON to SetRoomInfo: {:?}", e);
-                    println!("Raw JSON bytes: {:?}", cached_response_bytes);
+    unsafe {
+        if let Some(child_handle) = &CHILD_PROCESS {
+            if let Ok(mut guard) = child_handle.lock() {
+                if let Some(mut child) = guard.take() {
+                    child.kill().expect("Failed to kill child process");
+                    // Handle any cleanup or logging here
                 }
             }
-        } else {
-            println!("Failed to serialize cached data to JSON");
         }
-    } else {
-        println!("Failed to get cached data from Redis");
     }
-    
-    let key = format!("production::room_key::{}", params.room_name);
-    let result = match redis_connection.del(&key).await {
-        Ok(_) => 1, // Assume deletion success means result is 1 (or any appropriate value)
-        Err(err) => {
-            panic!("Error deleting key: {:?}", err);
-        }
-    };
-    
-    if result == 0 {
-        eprintln!("Key not found: {}", key);
-    } else {
-        println!("Key deleted successfully: {}", key);
-    }
+
     let obj = ResponseStop { started: false };
     HttpResponse::Ok().json(obj)
 }

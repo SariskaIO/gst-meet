@@ -363,12 +363,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arc-swap"
-version = "1.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
-
-[[package]]
 name = "async-attributes"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -917,20 +911,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "combine"
-version = "4.6.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
-dependencies = [
- "bytes 1.6.0",
- "futures-core",
- "memchr",
- "pin-project-lite 0.2.13",
- "tokio 1.21.2",
- "tokio-util 0.7.5",
-]
-
-[[package]]
 name = "command-group"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1002,12 +982,6 @@ checksum = "53fe5e26ff1b7aef8bca9c6080520cfb8d9333c7568e1829cef191a9723e5504"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "crc16"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "338089f42c427b86394a5ee60ff321da23a5c89c9d89514c829687b26359fcff"
 
 [[package]]
 name = "crc32fast"
@@ -2933,30 +2907,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "redis"
-version = "0.21.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "152f3863635cbb76b73bc247845781098302c6c9ad2060e1a9a7de56840346b6"
-dependencies = [
- "arc-swap",
- "async-trait",
- "bytes 1.6.0",
- "combine",
- "crc16",
- "futures",
- "futures-util",
- "itoa 1.0.10",
- "percent-encoding",
- "pin-project-lite 0.2.13",
- "rand 0.8.5",
- "ryu",
- "sha1 0.6.1",
- "tokio 1.21.2",
- "tokio-util 0.7.5",
- "url",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3123,7 +3073,6 @@ dependencies = [
  "minreq",
  "nix 0.26.4",
  "rand 0.8.5",
- "redis",
  "reqwest",
  "rust-crypto",
  "serde",

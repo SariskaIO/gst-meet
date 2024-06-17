@@ -27,7 +27,6 @@ async-std = { version = "1", features = ["attributes", "tokio1"] }
 libc = "0.2.132"
 rand = "0.8.5"
 humantime = "2.1.0"
-redis = { version = "0.21.5", features = ["aio", "connection-manager", "tokio-comp", "cluster"] }
 actix = "0.10.0-alpha.3"
 tokio-compat-02 = "0.2.0"
 tokio = { version = "1.21.2", features = ["full"] }
