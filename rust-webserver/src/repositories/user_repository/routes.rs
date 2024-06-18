@@ -97,23 +97,6 @@ pub struct StopParams {
     pod_name: String
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct RtmpParams {
-    room_name: String,
-    audio_only: Option<bool>,
-    video_only: Option<bool>,
-    is_vod: Option<bool>,
-    uuid: String,
-    app_id: String,
-    owner_id: String,
-    user_id: String,
-    pod_ip: String,
-    origin_pod_ip: String,
-    is_recording: Option<bool>,
-    stream_urls: Option<Vec<String>>,
-    stream_keys: Option<Vec<StreamKeyDict>>
-}
-
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct StreamKeyDict {
@@ -292,26 +275,6 @@ pub async fn start_recording(
     let url = Url::parse(&RTMP_OUT_LOCATION).unwrap();
     let hostname = url.host_str().unwrap();
     println!("{}", hostname);
-    let encoded = serde_json::to_string(&RtmpParams {
-        audio_only: params.audio_only,
-        video_only: params.video_only,
-        is_vod: params.is_vod,
-        user_id: claims.claims.context.user.id,
-        owner_id: claims.claims.context.group,
-        app_id: claims.claims.sub,
-        origin_pod_ip: hostname.to_string(),
-        uuid: new_uuid.to_lowercase(),
-        room_name: params.room_name.clone(),
-        is_recording: params.is_recording.clone(),
-        pod_ip: env::var("MY_POD_NAME").unwrap_or("none".to_string()),
-        stream_keys: params.stream_keys.clone(),
-        stream_urls: params.stream_urls.clone()
-    });
-    
-    let encoded = match encoded {
-        Ok(v) => v,
-        _ => "test".to_owned()
-    };
 
     let codec = match  &params.codec {
         Some(v) => v,
@@ -413,10 +376,8 @@ pub async fn start_recording(
         api_host, xmpp_domain, xmpp_muc_domain, video_width, video_height, params.room_name
     );
     
-
-    location = format!("{}/{}/{}", RTMP_OUT_LOCATION, app, stream);
-    location = format!("{}?vhost={}&param={}", location, vhost, encoded);
-
+    location = format!("{}/{}/{}?vhost={}", RTMP_OUT_LOCATION, app, stream, vhost);
+    
     // Set PROFILE if needed
     if profile != "" {
         set_var("PROFILE", profile);
