@@ -72,6 +72,7 @@ pub struct Params {
     room_name: String,
     audio_only: Option<bool>,
     video_only: Option<bool>,
+    uuid: Option<bool>,
     is_vod: Option<bool>,
     profile: Option<String>,
     reconnect_window: Option<u64>,
@@ -205,8 +206,6 @@ pub async fn start_recording(
 
 
     print!("{:?} params.audio_only ", params.audio_only );
-    let my_uuid = Uuid::new_v4();
-    let new_uuid = format!("{}", my_uuid.to_simple());
 
     let header  =  decode_header(&token);
     let request_url = env::var("SECRET_MANAGEMENT_SERVICE_PUBLIC_KEY_URL").unwrap_or("none".to_string());
@@ -281,6 +280,11 @@ pub async fn start_recording(
         _ => "H264"
     };
 
+    let new_uuid = match &params.uuid {
+        Some(v) => v,
+        _ => "",
+    };
+    
     let layout = match &params.layout {
         Some(v) => v,
         _ => "desktop",
