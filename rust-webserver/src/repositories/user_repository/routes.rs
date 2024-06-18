@@ -72,7 +72,6 @@ pub struct Params {
     room_name: String,
     audio_only: Option<bool>,
     video_only: Option<bool>,
-    uuid: Option<bool>,
     is_vod: Option<bool>,
     profile: Option<String>,
     reconnect_window: Option<u64>,
