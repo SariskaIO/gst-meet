@@ -93,8 +93,7 @@ pub struct Params {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StopParams {
-    room_name: String,
-    pod_name: String
+    room_name: String
 }
 
 
@@ -144,7 +143,8 @@ struct ResponseVideoStart {
 
 #[derive(Serialize)]
 struct ResponseStop {
-    started: bool
+    started: bool,
+    pod_name: String
 }
 
 #[derive(Serialize)]
