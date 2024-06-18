@@ -432,7 +432,7 @@ pub async fn start_recording(
             }
         }
     });
-    let obj = create_response_start_video(app.clone(), stream.clone(), new_uuid.clone(), is_low_latency.clone(), codec.clone().to_string(), is_vod.clone(), multi_bitrate.clone());
+    let obj = create_response_start_video(app.clone(), stream.clone(), new_uuid.clone().to_string(), is_low_latency.clone(), codec.clone().to_string(), is_vod.clone(), multi_bitrate.clone());
     HttpResponse::Ok().json(obj)
 }
 
