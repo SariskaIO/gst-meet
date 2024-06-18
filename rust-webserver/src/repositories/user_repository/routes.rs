@@ -93,7 +93,8 @@ pub struct Params {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StopParams {
-    room_name: String
+    room_name: String,
+    pod_name: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -578,6 +579,6 @@ pub async fn stop_recording(
         println!("No child process to kill");
     }
 
-    HttpResponse::Ok().json(ResponseStop { started: false })
+    HttpResponse::Ok().json(ResponseStop { started: false, pod_name: env::var("MY_POD_NAME").unwrap_or("none".to_string())})
 }
 
