@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.18.2 AS builder
+FROM rust:1.72-alpine as builder
 RUN apk --no-cache --update upgrade --ignore alpine-baselayout \
  && apk --no-cache add build-base gstreamer-dev gst-plugins-base-dev libnice-dev openssl-dev cargo
 COPY . .
