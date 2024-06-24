@@ -1,6 +1,6 @@
 FROM rust:1.72-alpine as builder
 RUN apk --no-cache --update upgrade --ignore alpine-baselayout \
- && apk --no-cache add build-base gstreamer-dev gst-plugins-base-dev libnice-dev openssl-dev cargo
+ && apk --no-cache add build-base gstreamer-dev gst-plugins-base-dev libnice-dev openssl-dev cargo glib-dev gettext-dev
 COPY . .
 RUN cargo build --release -p gst-meet
 
@@ -13,7 +13,7 @@ RUN cargo build --release -p rust-webserver
 # Create the final image
 FROM docker.io/library/alpine:3.18.2
 RUN apk --update --no-cache upgrade --ignore alpine-baselayout \
- && apk --no-cache add openssl gstreamer gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav libnice libnice-gstreamer
+ && apk --no-cache add openssl gstreamer gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav libnice libnice-gstreamer glib libintl
 
 # Copy the built binaries from the previous stage
 COPY --from=builder target/release/gst-meet /usr/local/bin/
