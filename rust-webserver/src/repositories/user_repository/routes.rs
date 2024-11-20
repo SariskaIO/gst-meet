@@ -31,22 +31,30 @@ use libc::{kill, SIGTERM};
 use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
 use std::process::{Command, Child};
 use lazy_static::lazy_static;
+use reqwest::Client;
+use core::time::Duration;
+
+
 
 lazy_static! {
-    static ref HTTP_CLIENT: Client = Client::builder()
+    static ref HTTP_CLIENT: reqwest::Client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
         .build()
         .expect("Failed to create HTTP client");
 }
 
 async fn fetch_public_key(url: &str) -> Result<String, reqwest::Error> {
-    let response = HTTP_CLIENT
-        .get(url)
+    let response = HTTP_CLIENT.get(url)
         .send()
-        .await?
-        .error_for_status()?;
+        .await?;
     
-    response.text().await
+    match response.error_for_status() {
+        Ok(response) => response.text().await,
+        Err(err) => {
+            println!("Public key request failed: {}", err);
+            Err(err)
+        }
+    }
 }
 
 async fn fetch_origin_data() -> Result<SchedulerData, reqwest::Error> {
@@ -300,7 +308,7 @@ pub async fn start_recording(
             }
         }
     }
-    
+
     let url = Url::parse(&RTMP_OUT_LOCATION).unwrap();
     let hostname = url.host_str().unwrap();
     println!("{}", hostname);
