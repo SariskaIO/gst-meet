@@ -33,14 +33,16 @@ use std::process::{Command, Child};
 use lazy_static::lazy_static;
 use reqwest::Client;
 use core::time::Duration;
-
-
+use tokio::runtime::Runtime;
 
 lazy_static! {
-    static ref HTTP_CLIENT: reqwest::Client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()
-        .expect("Failed to create HTTP client");
+    static ref RUNTIME: Runtime = Runtime::new().unwrap();
+    static ref HTTP_CLIENT: reqwest::Client = RUNTIME.block_on(async {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .unwrap()
+    });
 }
 
 async fn fetch_public_key(url: &str) -> Result<String, reqwest::Error> {
