@@ -32,6 +32,35 @@ use actix_web::error::{ ErrorBadRequest, ErrorInternalServerError};
 use std::process::{Command, Child};
 use lazy_static::lazy_static;
 
+lazy_static! {
+    static ref HTTP_CLIENT: Client = Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .expect("Failed to create HTTP client");
+}
+
+async fn fetch_public_key(url: &str) -> Result<String, reqwest::Error> {
+    let response = HTTP_CLIENT
+        .get(url)
+        .send()
+        .await?
+        .error_for_status()?;
+    
+    response.text().await
+}
+
+async fn fetch_origin_data() -> Result<SchedulerData, reqwest::Error> {
+    let scheduler_url = env::var("ORIGIN_CLUSTER_SCHEDULER")
+        .unwrap_or_else(|_| "none".to_string());
+    
+    let response = HTTP_CLIENT
+        .get(&scheduler_url)
+        .send()
+        .await?
+        .error_for_status()?;
+    
+    response.json::<SchedulerData>().await
+}
 
 // This struct represents state
 #[derive(Clone)]
@@ -206,70 +235,72 @@ pub async fn start_recording(
 
     print!("{:?} params.audio_only ", params.audio_only );
 
-    let header  =  decode_header(&token);
-    let request_url = env::var("SECRET_MANAGEMENT_SERVICE_PUBLIC_KEY_URL").unwrap_or("none".to_string());
+
+    let header = decode_header(&token);
+    let request_url = env::var("SECRET_MANAGEMENT_SERVICE_PUBLIC_KEY_URL")
+        .unwrap_or_else(|_| "none".to_string());
     
     let header_data = match header {
         Ok(_token) => _token.kid,
         Err(_e) => None,
     };
+    
     let kid = header_data.as_deref().unwrap_or("default string");
-        // create a Sha256 object
-    let api_key_url =  format!("{}/{}", request_url, kid);
-    println!("{:?}", api_key_url);
-    let decoded_claims;
-    let claims;
-    let response = minreq::get(api_key_url).send();
-    match response {
-            Ok(response)=>{
-                let public_key = response.as_str().unwrap_or("default");
-                let deserialized: PublicKey = serde_json::from_str(&public_key).unwrap();
-                decoded_claims = decode::<Claims>(
-                    &token,
-                    &DecodingKey::from_rsa_components(&deserialized.n, &deserialized.e),
-        &Validation::new(Algorithm::RS256));
-                    match decoded_claims {
-                        Ok(v) => {
-                            claims = v;
-                        },
-                        Err(e) => {
-                        println!("Error decoding json: {:?}", e);
-                        return HttpResponse::Unauthorized().json("{}");
-                        },
-                    }
-            },
-            _=>{
-                return HttpResponse::Unauthorized().json("{}");
+    let api_key_url = format!("{}/{}", request_url, kid);
+    
+    let decoded_claims = match fetch_public_key(&api_key_url).await {
+        Ok(public_key) => {
+            match serde_json::from_str::<PublicKey>(&public_key) {
+                Ok(deserialized) => {
+                    decode::<Claims>(
+                        &token,
+                        &DecodingKey::from_rsa_components(&deserialized.n, &deserialized.e),
+                        &Validation::new(Algorithm::RS256)
+                    )
+                },
+                Err(e) => {
+                    println!("Error parsing public key: {:?}", e);
+                    return HttpResponse::InternalServerError().json("{}");
+                }
             }
-    }
+        },
+        Err(e) => {
+            println!("Error fetching public key: {:?}", e);
+            return HttpResponse::ServiceUnavailable().json("{}");
+        }
+    };
 
-    let mut RTMP_OUT_LOCATION: String; // Declare RTMP_OUT_LOCATION
+    let claims = match decoded_claims {
+        Ok(claims) => claims,
+        Err(e) => {
+            println!("Error decoding claims: {:?}", e);
+            return HttpResponse::Unauthorized().json("{}");
+        }
+    };
 
-    if multi_bitrate {
+    let mut RTMP_OUT_LOCATION: String;
+    
+    if params.multi_bitrate.unwrap_or(false) {
         if let (Some(ip), Some(port)) = (&params.multiBitrateOriginPodIp, &params.IngrestRtmpPort) {
             RTMP_OUT_LOCATION = format!("rtmp://{}:{}", ip, port);
         } else {
-            // Handle the case where one or both of the fields are None
-            // You can choose to panic, return an error, or handle it differently based on your application's logic
-            panic!("Missing required fields for RTMP_OUT_LOCATION");
+            return HttpResponse::BadRequest().json("Missing required fields for RTMP_OUT_LOCATION");
         }
     } else {
-        let response = minreq::get(env::var("ORIGIN_CLUSTER_SCHEDULER").unwrap_or("none".to_string())).send();
-        match response {
-            Ok(response)=>{
-                let response_as_str = response.as_str().unwrap_or("{}");
-                println!("{}", response_as_str);
-                let deserialized: SchedulerData = serde_json::from_str(&response_as_str).unwrap();
-                println!("{:?}", deserialized);
-                RTMP_OUT_LOCATION = format!("rtmp://{}:{}", deserialized.data.origin.ip, deserialized.data.origin.port.to_string()); 
+        match fetch_origin_data().await {
+            Ok(scheduler_data) => {
+                RTMP_OUT_LOCATION = format!("rtmp://{}:{}", 
+                    scheduler_data.data.origin.ip, 
+                    scheduler_data.data.origin.port.to_string()
+                );
             },
-            _=>{
-                RTMP_OUT_LOCATION = "rtmp://srs-origin-0.socs:1935".to_owned() // fallback in case origin cluster scheduler is down
+            Err(e) => {
+                println!("Error fetching origin data: {:?}, using fallback", e);
+                RTMP_OUT_LOCATION = "rtmp://srs-origin-0.socs:1935".to_owned();
             }
         }
     }
-
-
+    
     let url = Url::parse(&RTMP_OUT_LOCATION).unwrap();
     let hostname = url.host_str().unwrap();
     println!("{}", hostname);
