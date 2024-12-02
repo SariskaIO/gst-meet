@@ -368,7 +368,7 @@ pub async fn start_recording(
     
 ;    // Shared pipeline components
     let shared_pipeline = format!(
-        "/usr/local/bin/gst-meet \
+        "GST_DEBUG=3,rtmpsink:5,flvmux:5 /usr/local/bin/gst-meet \
         --web-socket-url=wss://{}/api/v1/media/websocket \
         --xmpp-domain={} \
         --muc-domain={} \
