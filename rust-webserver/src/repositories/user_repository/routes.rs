@@ -193,14 +193,14 @@ pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> Stri
                 
                 if config.audio {
                     elements.push(format!(
-                        "dec{}. ! queue max-size-buffers=4096 ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
+                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
                         i
                     ));
                 }
                 
                 if config.video {
                     elements.push(format!(
-                        "dec{}. ! queue max-size-buffers=4096 ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
+                        "dec{}. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
                         i, i
                     ));
                 }
