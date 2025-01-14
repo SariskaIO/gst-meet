@@ -521,12 +521,14 @@ pub async fn start_recording(
                                     ! rtmpsink location={}'", shared_pipeline, location),
         (false, true) => format!("{} \
                                     {} \
+                                    {} \
                                     compositor name=video background=black \
                                     ! x264enc \
                                     ! video/x-h264,profile=main \
                                     ! flvmux streamable=true name=mux \
                                     ! rtmpsink location={}'", shared_pipeline, ingest_source, ad_pipeline, location),
         _ => format!("{} \
+                    {} \
                     {} \
                     compositor name=video background=black \
                     ! videoscale \
