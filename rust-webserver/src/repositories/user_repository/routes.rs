@@ -97,12 +97,13 @@ pub struct Params {
     codec: Option<String>,
     multi_bitrate: Option<bool>,
     is_low_latency: Option<bool>,
-    ingest_config: Option<Vec<IngestConfig>>,
     username: Option<bool>,
     uuid: Option<String>,
     is_recording: Option<bool>,
     stream_urls: Option<Vec<String>>,
     stream_keys: Option<Vec<StreamKeyDict>>
+    ingest_config: Option<Vec<IngestConfig>>,
+    ad_config: Option<Vec<AdConfig>>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
