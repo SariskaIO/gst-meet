@@ -332,9 +332,9 @@ pub async fn start_recording(
         _ => "desktop",
     };
 
-    let ingest_url = match &params.ingest_url{
-        Some(v) => v,
-        _ => "",
+    let ingest_configs = match &params.ingest_config {
+        Some(configs) if !configs.is_empty() => configs,
+        _ => &Vec::new(),
     };
 
     let username = match params.username {
