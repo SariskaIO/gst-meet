@@ -101,7 +101,7 @@ pub struct Params {
     uuid: Option<String>,
     is_recording: Option<bool>,
     stream_urls: Option<Vec<String>>,
-    stream_keys: Option<Vec<StreamKeyDict>>
+    stream_keys: Option<Vec<StreamKeyDict>>,
     ingest_config: Option<Vec<IngestConfig>>,
     ad_config: Option<Vec<AdConfig>>
 }
