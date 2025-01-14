@@ -177,41 +177,48 @@ lazy_static! {
     static ref CHILD_PID: Arc<Mutex<Option<Pid>>> = Arc::new(Mutex::new(None));
 }
 
-fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
+pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
     match ingest_configs {
         Some(configs) if !configs.is_empty() => {
             let mut sources = Vec::new();
             
             for (i, config) in configs.iter().enumerate() {
+                if config.url.trim().is_empty() {
+                    eprintln!("Warning: Empty URL found in ingest config at index {}", i);
+                    continue;
+                }
+
                 let mut elements = Vec::new();
-                
-                // Base decoder
                 elements.push(format!("uridecodebin uri={} name=dec{}", config.url, i));
                 
-                // Audio pipeline if enabled
                 if config.audio {
                     elements.push(format!(
-                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
+                        "dec{}. ! queue max-size-buffers=4096 ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
                         i
                     ));
                 }
                 
-                // Video pipeline if enabled
                 if config.video {
                     elements.push(format!(
-                        "dec{}. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
+                        "dec{}. ! queue max-size-buffers=4096 ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
                         i, i
                     ));
                 }
                 
-                sources.push(elements.join(" "));
+                if !elements.is_empty() {
+                    sources.push(elements.join(" "));
+                }
             }
             
             sources.join(" ")
         },
-        _ => String::new()
+        _ => {
+            eprintln!("No valid ingest configurations found");
+            String::new()
+        }
     }
 }
+
 
 pub async fn start_recording( 
         _req: HttpRequest,
@@ -332,9 +339,15 @@ pub async fn start_recording(
         _ => "desktop",
     };
 
-    let ingest_configs = match &params.ingest_config {
-        Some(configs) if !configs.is_empty() => configs,
-        _ => &Vec::new(),
+    let ingest_config_list = match &params.ingest_config {
+        Some(ingest_configs) if !ingest_configs.is_empty() => {
+            println!("Found {} ingest configs", ingest_configs.len());
+            ingest_configs
+        },
+        _ => {
+            println!("No ingest configs found, using empty list");
+            &Vec::new()
+        }
     };
 
     let username = match params.username {
