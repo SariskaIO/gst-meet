@@ -226,21 +226,79 @@ pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> Stri
     }
 }
 
-// Function to build ad pipeline
+// Function to build ad pipeline with proper duration and position handling
 fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
     match ad_configs {
         Some(configs) if !configs.is_empty() => {
             let mut ad_elements = Vec::new();
             
             for (i, config) in configs.iter().enumerate() {
-                let ad_element = format!(
-                    "uridecodebin uri={} name=ad_{} ! queue ! videoscale ! videoconvert ! video/x-raw,format=I420 ! compositor name=comp_{} ! queue ! ",
-                    config.url, i, i
-                );
-                ad_elements.push(ad_element);
+                // Create different pipelines based on ad position
+                let position_specific_elements = match config.position.as_str() {
+                    "pre" => format!(
+                        // Pre-roll ad plays before main content
+                        "input-selector name=ads_selector_{i} ! \
+                         uridecodebin uri={} ! \
+                         videoscale ! videoconvert ! video/x-raw,format=I420 ! \
+                         queue ! identity sync=true ! \
+                         timeoverlay ! queue ! \
+                         identity sync=true single-segment=true \
+                         duration={} ! \
+                         compositor name=pre_comp ! queue ! \
+                         video.",
+                        config.url,
+                        config.duration * 1_000_000_000 // Convert seconds to nanoseconds
+                    ),
+                    
+                    "mid" => format!(
+                        // Mid-roll ad inserted during content
+                        "input-selector name=ads_selector_{i} ! \
+                         uridecodebin uri={} ! \
+                         videoscale ! videoconvert ! video/x-raw,format=I420 ! \
+                         queue ! identity sync=true ! \
+                         timeoverlay ! queue ! \
+                         identity sync=true single-segment=true \
+                         duration={} ! \
+                         compositor name=mid_comp ! queue ! \
+                         video.",
+                        config.url,
+                        config.duration * 1_000_000_000
+                    ),
+                    
+                    "post" => format!(
+                        // Post-roll ad plays after main content
+                        "input-selector name=ads_selector_{i} ! \
+                         uridecodebin uri={} ! \
+                         videoscale ! videoconvert ! video/x-raw,format=I420 ! \
+                         queue ! identity sync=true ! \
+                         timeoverlay ! queue ! \
+                         identity sync=true single-segment=true \
+                         duration={} ! \
+                         compositor name=post_comp ! queue ! \
+                         video.",
+                        config.url,
+                        config.duration * 1_000_000_000
+                    ),
+                    
+                    _ => String::new() // Invalid position
+                };
+                
+                if !position_specific_elements.is_empty() {
+                    ad_elements.push(position_specific_elements);
+                }
             }
             
-            ad_elements.join(" ")
+            // Connect all ad elements with proper timing
+            let pipeline = ad_elements.join(" ");
+            
+            // Add timing control elements
+            format!(
+                "videomixer name=mixer ! queue ! compositor name=final_comp ! queue ! \
+                 identity sync=true ! \
+                 {} \
+                 mixer.",
+                pipeline
+            )
         },
         _ => String::new()
     }
