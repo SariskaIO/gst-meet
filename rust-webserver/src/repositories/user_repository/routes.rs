@@ -54,7 +54,7 @@ pub struct Context {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct IngestConfig {
+pub struct IngestConfig {
     url: String,
     audio: bool,
     video: bool,
