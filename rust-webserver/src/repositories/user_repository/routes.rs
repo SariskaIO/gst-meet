@@ -219,6 +219,64 @@ pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> Stri
     }
 }
 
+pub fn build_ingest_pipeline_pip(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
+    match ingest_configs {
+        Some(configs) if !configs.is_empty() => {
+            let mut elements = Vec::new();
+            
+            // Main compositor setup
+            elements.push("compositor name=comp background=black".to_string());
+            
+            for (i, config) in configs.iter().enumerate() {
+                if config.url.trim().is_empty() {
+                    eprintln!("Warning: Empty URL found in ingest config at index {}", i);
+                    continue;
+                }
+
+                // Hardcoded PiP settings for top-right corner
+                // Main video will take up most of the frame
+                if i == 0 {
+                    // Main Jitsi video stream
+                    elements.push(format!(
+                        "comp. sink_{} sink_{}::zorder=0 sink_{}::width=1280 sink_{}::height=720",
+                        i, i, i, i
+                    ));
+                }
+
+                // Add video source with PiP positioning
+                if config.video {
+                    let pip_width = 320;  // 1/4 of 1280
+                    let pip_height = 180;  // 1/4 of 720
+                    let x_position = 940;  // 1280 - 320 - 20 (padding)
+                    let y_position = 20;   // top padding
+
+                    elements.push(format!(
+                        "uridecodebin uri={} name=dec{} ! queue ! videoscale ! video/x-raw,width={},height={} ! videoconvert ! video/x-raw,format=I420 ! comp. sink_{} sink_{}::xpos={} sink_{}::ypos={} sink_{}::width={} sink_{}::height={} sink_{}::alpha=1 sink_{}::zorder=1",
+                        config.url, i,
+                        pip_width, pip_height,
+                        i, i, x_position, i, y_position, i, pip_width, i, pip_height, i, i
+                    ));
+                }
+                
+                // Audio mixing remains unchanged
+                if config.audio {
+                    elements.push(format!(
+                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
+                        i
+                    ));
+                }
+            }
+            
+            elements.join(" ")
+        },
+        _ => {
+            eprintln!("No valid ingest configurations found");
+            String::new()
+        }
+    }
+}
+
+
 
 pub async fn start_recording( 
         _req: HttpRequest,
@@ -392,7 +450,7 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = build_ingest_pipeline(&params.ingest_config);
+    let ingest_source = build_ingest_pipeline_pip(&params.ingest_config);
 
 
     // Build location dynamically
@@ -415,7 +473,8 @@ pub async fn start_recording(
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux.",
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
+        compositor name=comp background=black ! videoscale ! video/x-raw,width=1280,height=720 ! queue'",
         api_host, xmpp_domain, xmpp_muc_domain, video_width, video_height, params.room_name
     );
     
