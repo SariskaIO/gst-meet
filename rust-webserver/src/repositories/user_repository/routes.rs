@@ -339,17 +339,6 @@ pub async fn start_recording(
         _ => "desktop",
     };
 
-    let ingest_config_list = match &params.ingest_config {
-        Some(ingest_configs) if !ingest_configs.is_empty() => {
-            println!("Found {} ingest configs", ingest_configs.len());
-            ingest_configs
-        },
-        _ => {
-            println!("No ingest configs found, using empty list");
-            &Vec::new()
-        }
-    };
-
     let username = match params.username {
         Some(v) => v,
         _ => false
@@ -403,7 +392,7 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = build_ingest_pipeline(&params.ingest_config);
+    let ingest_source = build_ingest_pipeline(&params.ingest_config_list);
 
 
     // Build location dynamically
