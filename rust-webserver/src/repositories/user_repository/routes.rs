@@ -53,6 +53,13 @@ pub struct Context {
     pub user: User  
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct IngestConfig {
+    url: String,
+    audio: bool,
+    video: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -83,7 +90,7 @@ pub struct Params {
     codec: Option<String>,
     multi_bitrate: Option<bool>,
     is_low_latency: Option<bool>,
-    ingest_url: Option<String>,
+    ingest_config: Option<Vec<IngestConfig>>,
     username: Option<bool>,
     uuid: Option<String>,
     is_recording: Option<bool>,
@@ -168,6 +175,42 @@ pub struct PublishRoomInfo {
 
 lazy_static! {
     static ref CHILD_PID: Arc<Mutex<Option<Pid>>> = Arc::new(Mutex::new(None));
+}
+
+fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
+    match ingest_configs {
+        Some(configs) if !configs.is_empty() => {
+            let mut sources = Vec::new();
+            
+            for (i, config) in configs.iter().enumerate() {
+                let mut elements = Vec::new();
+                
+                // Base decoder
+                elements.push(format!("uridecodebin uri={} name=dec{}", config.url, i));
+                
+                // Audio pipeline if enabled
+                if config.audio {
+                    elements.push(format!(
+                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
+                        i
+                    ));
+                }
+                
+                // Video pipeline if enabled
+                if config.video {
+                    elements.push(format!(
+                        "dec{}. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
+                        i, i
+                    ));
+                }
+                
+                sources.push(elements.join(" "));
+            }
+            
+            sources.join(" ")
+        },
+        _ => String::new()
+    }
 }
 
 pub async fn start_recording( 
@@ -347,13 +390,8 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = if !ingest_url.is_empty() {
-        format!("uridecodebin uri={} name=dec \
-             dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
-             dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
-    } else {
-        String::new()
-    };
+    let ingest_source = build_ingest_pipeline(&params.ingest_config);
+
 
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
