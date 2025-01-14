@@ -392,7 +392,7 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = build_ingest_pipeline(&params.ingest_config_list);
+    let ingest_source = build_ingest_pipeline(&params.ingest_config);
 
 
     // Build location dynamically
