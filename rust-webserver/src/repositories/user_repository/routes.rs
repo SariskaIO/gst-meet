@@ -60,6 +60,13 @@ pub struct IngestConfig {
     video: bool,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AdConfig {
+    pub url: String,
+    pub duration: u32,
+    pub position: String,  // "pre", "mid", "post"
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -219,64 +226,25 @@ pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> Stri
     }
 }
 
-pub fn build_ingest_pipeline_pip(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
-    match ingest_configs {
+// Function to build ad pipeline
+fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
+    match ad_configs {
         Some(configs) if !configs.is_empty() => {
-            let mut elements = Vec::new();
-            
-            // Main compositor setup
-            elements.push("compositor name=comp background=black".to_string());
+            let mut ad_elements = Vec::new();
             
             for (i, config) in configs.iter().enumerate() {
-                if config.url.trim().is_empty() {
-                    eprintln!("Warning: Empty URL found in ingest config at index {}", i);
-                    continue;
-                }
-
-                // Hardcoded PiP settings for top-right corner
-                // Main video will take up most of the frame
-                if i == 0 {
-                    // Main Jitsi video stream
-                    elements.push(format!(
-                        "comp. sink_{} sink_{}::zorder=0 sink_{}::width=1280 sink_{}::height=720",
-                        i, i, i, i
-                    ));
-                }
-
-                // Add video source with PiP positioning
-                if config.video {
-                    let pip_width = 320;  // 1/4 of 1280
-                    let pip_height = 180;  // 1/4 of 720
-                    let x_position = 940;  // 1280 - 320 - 20 (padding)
-                    let y_position = 20;   // top padding
-
-                    elements.push(format!(
-                        "uridecodebin uri={} name=dec{} ! queue ! videoscale ! video/x-raw,width={},height={} ! videoconvert ! video/x-raw,format=I420 ! comp. sink_{} sink_{}::xpos={} sink_{}::ypos={} sink_{}::width={} sink_{}::height={} sink_{}::alpha=1 sink_{}::zorder=1",
-                        config.url, i,
-                        pip_width, pip_height,
-                        i, i, x_position, i, y_position, i, pip_width, i, pip_height, i, i
-                    ));
-                }
-                
-                // Audio mixing remains unchanged
-                if config.audio {
-                    elements.push(format!(
-                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
-                        i
-                    ));
-                }
+                let ad_element = format!(
+                    "uridecodebin uri={} name=ad_{} ! queue ! videoscale ! videoconvert ! video/x-raw,format=I420 ! compositor name=comp_{} ! queue ! ",
+                    config.url, i, i
+                );
+                ad_elements.push(ad_element);
             }
             
-            elements.join(" ")
+            ad_elements.join(" ")
         },
-        _ => {
-            eprintln!("No valid ingest configurations found");
-            String::new()
-        }
+        _ => String::new()
     }
 }
-
-
 
 pub async fn start_recording( 
         _req: HttpRequest,
@@ -450,8 +418,7 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = build_ingest_pipeline_pip(&params.ingest_config);
-
+    let ingest_source = build_ingest_pipeline(&params.ingest_config);
 
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
@@ -485,6 +452,9 @@ pub async fn start_recording(
         set_var("PROFILE", profile);
     }
 
+    // Build the ad pipeline if configured
+    let ad_pipeline = build_ad_pipeline(&params.ad_config);
+
     // Dynamically build the rest of the gstreamer pipeline
     gstreamer_pipeline = match (audio_only, video_only) {
         (true, false) => format!("{} audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
@@ -496,7 +466,7 @@ pub async fn start_recording(
                                     ! x264enc \
                                     ! video/x-h264,profile=main \
                                     ! flvmux streamable=true name=mux \
-                                    ! rtmpsink location={}'", shared_pipeline, ingest_source, location),
+                                    ! rtmpsink location={}'", shared_pipeline, ingest_source, ad_pipeline, location),
         _ => format!("{} \
                     {} \
                     compositor name=video background=black \
@@ -505,7 +475,7 @@ pub async fn start_recording(
                     ! x264enc {} \
                     ! video/x-h264,profile={} \
                     ! flvmux streamable=true name=mux \
-                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_width*2, video_height, video_height*2,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
+                    ! rtmpsink location={}'", shared_pipeline, ingest_source, ad_pipeline, video_width, video_width*2, video_height, video_height*2,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
     };
 
     println!("gstreamer-pipeline: {}", gstreamer_pipeline);
