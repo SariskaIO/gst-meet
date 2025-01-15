@@ -238,30 +238,30 @@ fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
                 match config.position.as_str() {
                     "pre" => {
                         pre_roll_elements.push(format!(
-                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_pre_{i} ! \
+                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_pre_{} ! \
                              queue ! decodebin ! videoconvert ! videoscale ! \
                              video/x-raw,width=1280,height=720 ! \
-                             queue ! concat.sink_{i}",
-                            config.url
+                             queue ! concat.sink_{}",
+                            config.url, i, i
                         ));
                     },
                     "mid" => {
                         mid_roll_elements.push(format!(
-                            "input-selector name=selector_{i} ! \
+                            "input-selector name=selector_{} ! \
                              uridecodebin uri={} ! \
                              videoscale ! videoconvert ! video/x-raw,format=I420 ! \
                              queue ! compositor name=mid_comp ! \
                              video/x-raw,width=1280,height=720",
-                            config.url
+                            i, config.url
                         ));
                     },
                     "post" => {
                         post_roll_elements.push(format!(
-                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_post_{i} ! \
+                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_post_{} ! \
                              queue ! decodebin ! videoconvert ! videoscale ! \
                              video/x-raw,width=1280,height=720 ! \
                              queue ! concat.sink_{}", 
-                            config.url
+                            config.url, i, i
                         ));
                     },
                     _ => continue
