@@ -242,17 +242,17 @@ fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
                              queue ! decodebin ! videoconvert ! videoscale ! \
                              video/x-raw,width=1280,height=720 ! \
                              queue ! concat.sink_{}",
-                            config.url, i, i
+                            config.url.replace("\"", "\\\""), i, i
                         ));
                     },
                     "mid" => {
                         mid_roll_elements.push(format!(
                             "input-selector name=selector_{} ! \
-                             uridecodebin uri={} ! \
+                             uridecodebin uri=\"{}\" ! \
                              videoscale ! videoconvert ! video/x-raw,format=I420 ! \
                              queue ! compositor name=mid_comp ! \
                              video/x-raw,width=1280,height=720",
-                            i, config.url
+                            i, config.url.replace("\"", "\\\"")
                         ));
                     },
                     "post" => {
@@ -261,7 +261,7 @@ fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
                              queue ! decodebin ! videoconvert ! videoscale ! \
                              video/x-raw,width=1280,height=720 ! \
                              queue ! concat.sink_{}", 
-                            config.url, i, i
+                            config.url.replace("\"", "\\\""), i, i
                         ));
                     },
                     _ => continue
@@ -270,18 +270,9 @@ fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
 
             // Build the complete pipeline
             let mut pipeline_elements = Vec::new();
-
-            // Add concat element for video
-            pipeline_elements.push("concat name=concat ! queue ! videoconvert ! x264enc".to_string());
-
+            
             // Add pre-roll ads
             pipeline_elements.extend(pre_roll_elements);
-
-            // Add main content input
-            pipeline_elements.push("queue ! concat.sink_main".to_string());
-
-            // Add post-roll ads
-            pipeline_elements.extend(post_roll_elements);
 
             // Join all elements
             pipeline_elements.join(" ")
@@ -289,7 +280,6 @@ fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
         _ => String::new()
     }
 }
-
 pub async fn start_recording( 
         _req: HttpRequest,
         params: web::Json<Params>,
@@ -484,8 +474,7 @@ pub async fn start_recording(
         --recv-video-scale-width={} \
         --recv-video-scale-height={} \
         --room-name={} \
-        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux. \
-        compositor name=comp background=black ! videoscale ! video/x-raw,width=1280,height=720 ! queue'",
+        --recv-pipeline='audiomixer name=audio ! queue2 ! voaacenc bitrate=96000 ! mux.",
         api_host, xmpp_domain, xmpp_muc_domain, video_width, video_height, params.room_name
     );
     
