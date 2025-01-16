@@ -53,6 +53,20 @@ pub struct Context {
     pub user: User  
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct IngestConfig {
+    url: String,
+    audio: bool,
+    video: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AdConfig {
+    pub url: String,
+    pub duration: u32,
+    pub position: String,  // "pre", "mid", "post"
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -83,12 +97,13 @@ pub struct Params {
     codec: Option<String>,
     multi_bitrate: Option<bool>,
     is_low_latency: Option<bool>,
-    ingest_url: Option<String>,
     username: Option<bool>,
     uuid: Option<String>,
     is_recording: Option<bool>,
     stream_urls: Option<Vec<String>>,
-    stream_keys: Option<Vec<StreamKeyDict>>
+    stream_keys: Option<Vec<StreamKeyDict>>,
+    ingest_config: Option<Vec<IngestConfig>>,
+    ad_config: Option<Vec<AdConfig>>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -170,6 +185,101 @@ lazy_static! {
     static ref CHILD_PID: Arc<Mutex<Option<Pid>>> = Arc::new(Mutex::new(None));
 }
 
+pub fn build_ingest_pipeline(ingest_configs: &Option<Vec<IngestConfig>>) -> String {
+    match ingest_configs {
+        Some(configs) if !configs.is_empty() => {
+            let mut sources = Vec::new();
+            
+            for (i, config) in configs.iter().enumerate() {
+                if config.url.trim().is_empty() {
+                    eprintln!("Warning: Empty URL found in ingest config at index {}", i);
+                    continue;
+                }
+
+                let mut elements = Vec::new();
+                elements.push(format!("uridecodebin uri={} name=dec{}", config.url, i));
+                
+                if config.audio {
+                    elements.push(format!(
+                        "dec{}. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio.",
+                        i
+                    ));
+                }
+                
+                if config.video {
+                    elements.push(format!(
+                        "dec{}. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_{}",
+                        i, i
+                    ));
+                }
+                
+                if !elements.is_empty() {
+                    sources.push(elements.join(" "));
+                }
+            }
+            
+            sources.join(" ")
+        },
+        _ => {
+            eprintln!("No valid ingest configurations found");
+            String::new()
+        }
+    }
+}
+
+fn build_ad_pipeline(ad_configs: &Option<Vec<AdConfig>>) -> String {
+    match ad_configs {
+        Some(configs) if !configs.is_empty() => {
+            let mut pre_roll_elements = Vec::new();
+            let mut mid_roll_elements = Vec::new();
+            let mut post_roll_elements = Vec::new();
+            
+            for (i, config) in configs.iter().enumerate() {
+                match config.position.as_str() {
+                    "pre" => {
+                        pre_roll_elements.push(format!(
+                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_pre_{} ! \
+                             queue ! decodebin ! videoconvert ! videoscale ! \
+                             video/x-raw,width=1280,height=720 ! \
+                             queue ! concat.sink_{}",
+                            config.url.replace("\"", "\\\""), i, i
+                        ));
+                    },
+                    "mid" => {
+                        mid_roll_elements.push(format!(
+                            "input-selector name=selector_{} ! \
+                             uridecodebin uri=\"{}\" ! \
+                             videoscale ! videoconvert ! video/x-raw,format=I420 ! \
+                             queue ! compositor name=mid_comp ! \
+                             video/x-raw,width=1280,height=720",
+                            i, config.url.replace("\"", "\\\"")
+                        ));
+                    },
+                    "post" => {
+                        post_roll_elements.push(format!(
+                            "souphttpsrc location=\"{}\" ! qtdemux name=demux_post_{} ! \
+                             queue ! decodebin ! videoconvert ! videoscale ! \
+                             video/x-raw,width=1280,height=720 ! \
+                             queue ! concat.sink_{}", 
+                            config.url.replace("\"", "\\\""), i, i
+                        ));
+                    },
+                    _ => continue
+                }
+            }
+
+            // Build the complete pipeline
+            let mut pipeline_elements = Vec::new();
+            
+            // Add pre-roll ads
+            pipeline_elements.extend(pre_roll_elements);
+
+            // Join all elements
+            pipeline_elements.join(" ")
+        },
+        _ => String::new()
+    }
+}
 pub async fn start_recording( 
         _req: HttpRequest,
         params: web::Json<Params>,
@@ -289,11 +399,6 @@ pub async fn start_recording(
         _ => "desktop",
     };
 
-    let ingest_url = match &params.ingest_url{
-        Some(v) => v,
-        _ => "",
-    };
-
     let username = match params.username {
         Some(v) => v,
         _ => false
@@ -347,13 +452,7 @@ pub async fn start_recording(
     let xmpp_muc_domain = env::var("XMPP_MUC_DOMAIN").unwrap_or("none".to_string());
     let xmpp_domain = env::var("XMPP_DOMAIN").unwrap_or("none".to_string());
 
-    let ingest_source = if !ingest_url.is_empty() {
-        format!("uridecodebin uri={} name=dec \
-             dec. ! queue ! audioconvert ! audioresample ! audio/x-raw,channels=2 ! audio. \
-             dec. ! queue ! videoscale ! video/x-raw,width=640,height=360 ! videoconvert ! video/x-raw,format=I420 ! queue ! video.sink_0 ", ingest_url)
-    } else {
-        String::new()
-    };
+    let ingest_source = build_ingest_pipeline(&params.ingest_config);
 
     // Build location dynamically
     let (video_width, video_height, profile, vhost) = match (resolution, layout, is_low_latency, multi_bitrate) {
@@ -386,6 +485,9 @@ pub async fn start_recording(
         set_var("PROFILE", profile);
     }
 
+    // Build the ad pipeline if configured
+    let ad_pipeline = build_ad_pipeline(&params.ad_config);
+
     // Dynamically build the rest of the gstreamer pipeline
     gstreamer_pipeline = match (audio_only, video_only) {
         (true, false) => format!("{} audio/mpeg ! aacparse ! audio/mpeg, mpegversion=4 \
@@ -393,12 +495,14 @@ pub async fn start_recording(
                                     ! rtmpsink location={}'", shared_pipeline, location),
         (false, true) => format!("{} \
                                     {} \
+                                    {} \
                                     compositor name=video background=black \
                                     ! x264enc \
                                     ! video/x-h264,profile=main \
                                     ! flvmux streamable=true name=mux \
-                                    ! rtmpsink location={}'", shared_pipeline, ingest_source, location),
+                                    ! rtmpsink location={}'", shared_pipeline, ingest_source, ad_pipeline, location),
         _ => format!("{} \
+                    {} \
                     {} \
                     compositor name=video background=black \
                     ! videoscale \
@@ -406,7 +510,7 @@ pub async fn start_recording(
                     ! x264enc {} \
                     ! video/x-h264,profile={} \
                     ! flvmux streamable=true name=mux \
-                    ! rtmpsink location={}'", shared_pipeline, ingest_source, video_width, video_width*2, video_height, video_height*2,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
+                    ! rtmpsink location={}'", shared_pipeline, ingest_source, ad_pipeline, video_width, video_width*2, video_height, video_height*2,if is_low_latency { "speed-preset=ultrafast tune=zerolatency" } else { "" }, if video_width == 360 { "main" } else { "high" }, location), // Conditional x264enc parameters and profile
     };
 
     println!("gstreamer-pipeline: {}", gstreamer_pipeline);
