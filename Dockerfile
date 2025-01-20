@@ -1,20 +1,6 @@
-FROM docker.io/library/alpine:3.19 AS builder
-
-# Add edge repository for newer GStreamer version
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-
-# Update and install dependencies
+FROM docker.io/library/alpine:edge AS builder
 RUN apk --no-cache --update upgrade --ignore alpine-baselayout \
-    && apk --no-cache add \
-        build-base \
-        gstreamer-dev=1.24.10-r0 \
-        gst-plugins-base-dev \
-        glib-dev \
-        libnice-dev \
-        openssl-dev \
-        cargo
-
+ && apk --no-cache add build-base gstreamer-dev gst-plugins-base-dev libnice-dev openssl-dev cargo
 COPY . .
 RUN cargo build --release -p gst-meet
 
@@ -23,24 +9,11 @@ COPY ./rust-webserver .
 WORKDIR ./rust-webserver
 RUN cargo build --release -p rust-webserver
 
+
 # Create the final image
-FROM docker.io/library/alpine:3.19
-
-# Add edge repository
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-
+FROM docker.io/library/alpine:edge
 RUN apk --update --no-cache upgrade --ignore alpine-baselayout \
-    && apk --no-cache add \
-        openssl \
-        gstreamer=1.24.10-r0 \
-        gst-plugins-good \
-        gst-plugins-bad \
-        gst-plugins-ugly \
-        gst-libav \
-        glib \
-        libnice \
-        libnice-gstreamer
+ && apk --no-cache add openssl gstreamer gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav libnice libnice-gstreamer
 
 # Copy the built binaries from the previous stage
 COPY --from=builder target/release/gst-meet /usr/local/bin/
