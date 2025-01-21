@@ -13,9 +13,7 @@ RUN apk --no-cache --update upgrade --ignore alpine-baselayout && \
 RUN wget https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad-1.24.10.tar.xz && \
     tar xf gst-plugins-bad-1.24.10.tar.xz && \
     cd gst-plugins-bad-1.24.10 && \
-    meson setup builddir \
-        -Dsrt=enabled \
-        -Dgpl=enabled && \
+    meson setup builddir -Dsrt=enabled -Dgpl=enabled && \
     ninja -C builddir && \
     ninja -C builddir install
 
