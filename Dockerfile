@@ -7,20 +7,7 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositori
 
 # Install build dependencies
 RUN apk --no-cache --update upgrade --ignore alpine-baselayout && \
-    apk --no-cache add \
-        build-base \
-        meson \
-        ninja \
-        pkgconf \
-        gstreamer-dev \
-        gst-plugins-base-dev \
-        gst-plugins-bad-dev \
-        libsrt-dev \
-        libsrt \
-        glib-dev \
-        python3 \
-        openssl-dev \
-        cargo
+    apk --no-cache add build-base meson ninja pkgconf gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev libsrt-dev libsrt glib-dev python3 openssl-dev cargo
 
 # Build gst-plugins-bad with SRT support
 RUN wget https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad-1.24.10.tar.xz && \
@@ -49,18 +36,7 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositori
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 
 RUN apk --update --no-cache upgrade --ignore alpine-baselayout && \
-    apk --no-cache add \
-        openssl \
-        gstreamer \
-        gst-plugins-base \
-        gst-plugins-good \
-        gst-plugins-bad \
-        gst-plugins-ugly \
-        gst-libav \
-        glib \
-        libnice \
-        libnice-gstreamer \
-        libsrt
+    apk --no-cache add openssl gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav glib libnice libnice-gstreamer libsrt
 
 # Copy the GStreamer plugins from builder
 COPY --from=builder /usr/local/lib/gstreamer-1.0/* /usr/lib/gstreamer-1.0/
